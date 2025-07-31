@@ -1,5 +1,7 @@
+"use client";
+
 import React from "react";
-import { useRouter } from "next/router";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, Home, RefreshCw, ArrowLeft } from "lucide-react";
 
 interface ErrorInfo {
@@ -49,9 +51,10 @@ const ERROR_TYPES: Record<string, ErrorInfo> = {
 
 const ErrorPage: React.FC = () => {
   const router = useRouter();
-  const { error } = router.query;
+  const searchParams = useSearchParams();
 
-  const errorType = typeof error === "string" ? error : "Default";
+  const error = searchParams.get("error");
+  const errorType = error || "Default";
   const errorInfo = ERROR_TYPES[errorType] || ERROR_TYPES.Default;
 
   const handleGoHome = (): void => {
@@ -63,23 +66,17 @@ const ErrorPage: React.FC = () => {
   };
 
   const handleRetry = (): void => {
-    // Remove the error parameter and retry the current route
-    const { ...restQuery } = router.query;
-    const currentPath = router.asPath.split("?")[0];
-
-    router.push({
-      pathname: currentPath,
-      query: restQuery,
-    });
+    // Refresh the current page
+    router.refresh();
   };
 
   React.useEffect(() => {
     // Log error for monitoring/analytics
     console.error(`Error page rendered: ${errorType}`, {
       errorType,
-      userAgent: navigator.userAgent,
+      userAgent: typeof window !== "undefined" ? navigator.userAgent : "SSR",
       timestamp: new Date().toISOString(),
-      url: window.location.href,
+      url: typeof window !== "undefined" ? window.location.href : "SSR",
     });
 
     // Optional: Send to error tracking service
