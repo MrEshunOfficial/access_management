@@ -1,0 +1,275 @@
+# Admin System Architecture & Folder Structure
+
+## 1. Core Architecture Overview
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Client Layer  │    │  Middleware     │    │   Database      │
+│                 │    │                 │    │                 │
+│ • Admin UI      │◄──►│ • Auth Guards   │◄──►│ • Users         │
+│ • User Mgmt     │    │ • Role Check    │    │ • Invitations   │
+│ • Audit Logs    │    │ • Session Mgmt  │    │ • Audit Logs    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+## 2. Recommended Folder Structure
+
+```
+app/
+├── admin/
+│   ├── layout.tsx                    # Admin layout with navigation
+│   ├── page.tsx                      # Admin dashboard
+│   ├── loading.tsx                   # Loading UI
+│   ├── error.tsx                     # Error handling
+│   │
+│   ├── users/
+│   │   ├── page.tsx                  # User management main page
+│   │   ├── [userId]/
+│   │   │   ├── page.tsx              # User detail/edit page
+│   │   │   └── edit/page.tsx         # User edit form
+│   │   └── components/
+│   │       ├── UserTable.tsx         # Users data table
+│   │       ├── UserActions.tsx       # Promote/demote actions
+│   │       └── UserFilters.tsx       # Search/filter components
+│   │
+│   ├── invitations/
+│   │   ├── page.tsx                  # Invitations management
+│   │   ├── create/page.tsx           # Create invitation form
+│   │   └── components/
+│   │       ├── InvitationTable.tsx   # Pending invitations
+│   │       ├── CreateInviteForm.tsx  # Invitation form
+│   │       └── InviteActions.tsx     # Revoke/resend actions
+│   │
+│   ├── audit/
+│   │   ├── page.tsx                  # Audit logs viewer
+│   │   └── components/
+│   │       ├── AuditTable.tsx        # Audit logs table
+│   │       ├── AuditFilters.tsx      # Date/action filters
+│   │       └── AuditExport.tsx       # Export functionality
+│   │
+│   ├── settings/
+│   │   ├── page.tsx                  # Admin settings
+│   │   ├── security/page.tsx         # Security settings
+│   │   └── components/
+│   │       ├── SecuritySettings.tsx  # Security config
+│   │       └── SystemSettings.tsx    # System preferences
+│   │
+│   └── components/
+│       ├── AdminNav.tsx              # Admin navigation
+│       ├── AdminHeader.tsx           # Admin header with breadcrumbs
+│       ├── AdminSidebar.tsx          # Sidebar navigation
+│       ├── RoleGuard.tsx             # Role-based access guard
+│       ├── AdminStats.tsx            # Dashboard statistics
+│       └── shared/
+│           ├── DataTable.tsx         # Reusable table component
+│           ├── ActionModal.tsx       # Confirmation modals
+│           └── StatusBadge.tsx       # Status indicators
+│
+├── api/
+│   └── admin/
+│       ├── users/
+│       │   ├── route.ts              # GET /api/admin/users
+│       │   ├── [userId]/
+│       │   │   ├── route.ts          # GET/PUT/DELETE user
+│       │   │   ├── promote/route.ts  # POST promote user
+│       │   │   └── demote/route.ts   # POST demote user
+│       │   └── bulk/route.ts         # POST bulk operations
+│       │
+│       ├── invitations/
+│       │   ├── route.ts              # GET/POST invitations
+│       │   ├── [inviteId]/
+│       │   │   ├── route.ts          # GET/DELETE invitation
+│       │   │   └── revoke/route.ts   # POST revoke invitation
+│       │   └── resend/route.ts       # POST resend invitation
+│       │
+│       ├── audit/
+│       │   ├── route.ts              # GET audit logs
+│       │   └── export/route.ts       # GET export audit logs
+│       │
+│       └── stats/
+│           └── route.ts              # GET admin statistics
+│
+├── middleware.ts                     # Enhanced with admin route protection
+│
+lib/
+├── admin/
+│   ├── auth.ts                       # Your existing admin auth functions
+│   ├── permissions.ts                # Permission checking utilities
+│   ├── validation.ts                 # Admin action validations
+│   ├── constants.ts                  # Admin-related constants
+│   └── utils/
+│       ├── audit.ts                  # Audit logging utilities
+│       ├── email.ts                  # Invitation email sending
+│       └── export.ts                 # Data export utilities
+│
+└── hooks/
+    ├── useAdmin.ts                   # Admin data fetching
+    ├── useUsers.ts                   # User management hooks
+    ├── useInvitations.ts             # Invitation management
+    └── useAudit.ts                   # Audit log hooks
+```
+
+## 3. Key Components Architecture
+
+### A. Admin Layout Structure
+```typescript
+// app/admin/layout.tsx
+interface AdminLayoutProps {
+  children: React.ReactNode;
+}
+
+// Features:
+// - Role-based access control
+// - Admin navigation
+// - Session validation
+// - Breadcrumb navigation
+```
+
+### B. API Route Structure
+```typescript
+// app/api/admin/users/route.ts
+// GET: List users with filtering/pagination
+// POST: Create user (admin creation)
+
+// app/api/admin/users/[userId]/route.ts
+// GET: Get user details
+// PUT: Update user
+// DELETE: Delete user (soft delete)
+
+// app/api/admin/users/[userId]/promote/route.ts
+// POST: Promote user role
+```
+
+### C. Permission System
+```typescript
+// lib/admin/permissions.ts
+type AdminAction = 
+  | 'VIEW_USERS' 
+  | 'MANAGE_USERS' 
+  | 'CREATE_INVITATIONS' 
+  | 'MANAGE_SUPER_ADMINS'
+  | 'VIEW_AUDIT_LOGS'
+  | 'EXPORT_DATA';
+
+type UserRole = 'user' | 'admin' | 'super_admin';
+
+const PERMISSIONS: Record<UserRole, AdminAction[]> = {
+  user: [],
+  admin: ['VIEW_USERS', 'MANAGE_USERS', 'CREATE_INVITATIONS', 'VIEW_AUDIT_LOGS'],
+  super_admin: ['VIEW_USERS', 'MANAGE_USERS', 'CREATE_INVITATIONS', 'MANAGE_SUPER_ADMINS', 'VIEW_AUDIT_LOGS', 'EXPORT_DATA']
+};
+```
+
+## 4. Security Considerations
+
+### A. Route Protection
+```typescript
+// middleware.ts enhancement
+export function middleware(request: NextRequest) {
+  // Existing auth logic...
+  
+  // Admin route protection
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    if (!session?.user || !['admin', 'super_admin'].includes(session.user.role)) {
+      return NextResponse.redirect(new URL('/unauthorized', request.url));
+    }
+  }
+}
+```
+
+### B. API Route Guards
+```typescript
+// lib/admin/validation.ts
+export async function validateAdminAccess(
+  request: Request,
+  requiredRole: 'admin' | 'super_admin' = 'admin'
+): Promise<{ valid: boolean; user?: User; session?: Session }> {
+  // Session validation
+  // Role checking
+  // IP logging for sensitive actions
+}
+```
+
+## 5. Data Flow Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Admin UI      │    │   API Routes    │    │   Auth Layer    │
+│                 │    │                 │    │                 │
+│ • User Actions  │───►│ • Validation    │───►│ • Role Check    │
+│ • Form Submit   │    │ • Business Logic│    │ • Session Valid │
+│ • Data Display  │    │ • Database Ops  │    │ • Audit Log     │
+│                 │◄───│ • Response      │◄───│ • Error Handle │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+## 6. State Management
+
+### A. Server State (Recommended: TanStack Query)
+```typescript
+// hooks/useUsers.ts
+export function useUsers(filters?: UserFilters) {
+  return useQuery({
+    queryKey: ['admin', 'users', filters],
+    queryFn: () => fetchUsers(filters),
+    staleTime: 30000, // 30 seconds
+  });
+}
+```
+
+### B. Client State (Recommended: Zustand)
+```typescript
+// stores/adminStore.ts
+interface AdminStore {
+  selectedUsers: string[];
+  filters: UserFilters;
+  setSelectedUsers: (users: string[]) => void;
+  setFilters: (filters: UserFilters) => void;
+}
+```
+
+## 7. Error Handling Strategy
+
+### A. Global Error Boundary
+```typescript
+// app/admin/error.tsx
+// Handle admin-specific errors
+// Logging and user feedback
+// Fallback UI
+```
+
+### B. API Error Responses
+```typescript
+// Standardized error format
+interface AdminApiError {
+  success: false;
+  error: string;
+  code: 'INSUFFICIENT_PERMISSIONS' | 'USER_NOT_FOUND' | 'VALIDATION_ERROR';
+  details?: any;
+}
+```
+
+## 8. Testing Structure
+
+```
+__tests__/
+├── admin/
+│   ├── api/
+│   │   ├── users.test.ts
+│   │   ├── invitations.test.ts
+│   │   └── audit.test.ts
+│   ├── components/
+│   │   ├── UserTable.test.tsx
+│   │   ├── InvitationForm.test.tsx
+│   │   └── AdminNav.test.tsx
+│   └── utils/
+│       ├── permissions.test.ts
+│       └── audit.test.ts
+```
+
+This architecture provides:
+- **Scalability**: Easy to add new admin features
+- **Security**: Multiple layers of protection
+- **Maintainability**: Clean separation of concerns
+- **Testability**: Clear boundaries for testing
+- **User Experience**: Intuitive navigation and feedback
