@@ -127,36 +127,69 @@ export const authOptions: NextAuthConfig = {
     updateAge: 60 * 60,
   },
   
-  // Simplified cookie configuration - remove domain restriction for testing
+  // Production-optimized cookie configuration
   cookies: {
     sessionToken: {
-      name: `next-auth.session-token`,
+      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.session-token`,
       options: {
         httpOnly: true,
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        sameSite: 'lax', // Use 'lax' for better compatibility
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        // Remove domain restriction for local testing
-        ...(process.env.NODE_ENV === 'production' && { domain: '.vercel.app' })
+        // Only set domain if you need cross-subdomain support
+        ...(process.env.COOKIE_DOMAIN && { domain: process.env.COOKIE_DOMAIN })
       }
     },
     callbackUrl: {
-      name: `next-auth.callback-url`,
+      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.callback-url`,
       options: {
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        ...(process.env.NODE_ENV === 'production' && { domain: '.vercel.app' })
+        ...(process.env.COOKIE_DOMAIN && { domain: process.env.COOKIE_DOMAIN })
       }
     },
     csrfToken: {
-      name: `next-auth.csrf-token`,
+      name: `${process.env.NODE_ENV === 'production' ? '__Host-' : ''}next-auth.csrf-token`,
       options: {
         httpOnly: true,
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        ...(process.env.NODE_ENV === 'production' && { domain: '.vercel.app' })
+        // __Host- prefix requires no domain and path must be '/'
+        ...(process.env.NODE_ENV !== 'production' && process.env.COOKIE_DOMAIN && { domain: process.env.COOKIE_DOMAIN })
+      }
+    },
+    pkceCodeVerifier: {
+      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.pkce.code_verifier`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 900,
+        ...(process.env.COOKIE_DOMAIN && { domain: process.env.COOKIE_DOMAIN })
+      }
+    },
+    state: {
+      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.state`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 900,
+        ...(process.env.COOKIE_DOMAIN && { domain: process.env.COOKIE_DOMAIN })
+      }
+    },
+    nonce: {
+      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.nonce`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        ...(process.env.COOKIE_DOMAIN && { domain: process.env.COOKIE_DOMAIN })
       }
     }
   },
@@ -165,9 +198,9 @@ export const authOptions: NextAuthConfig = {
   useSecureCookies: process.env.NODE_ENV === 'production',
   
   pages: {
-    signIn: "/auth/user/login",
-    signOut: "/auth/user/logout",
-    error: "/auth/user/error",
+    signIn: "/user/login", // Changed from "/auth/users/login" to match your auth.config
+    signOut: "/user/login",
+    error: "/user/error", // Make sure this page exists
   },
   
   providers: [
@@ -180,6 +213,10 @@ export const authOptions: NextAuthConfig = {
           access_type: "offline",
           response_type: "code",
         },
+      },
+      // Add these for production
+      httpOptions: {
+        timeout: 10000,
       },
     }),
     CredentialsProvider({
