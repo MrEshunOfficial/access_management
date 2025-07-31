@@ -72,43 +72,53 @@ const ErrorPage: React.FC = () => {
 
   React.useEffect(() => {
     // Log error for monitoring/analytics
-    console.error(`Error page rendered: ${errorType}`, {
+    const errorDetails = {
       errorType,
       userAgent: typeof window !== "undefined" ? navigator.userAgent : "SSR",
       timestamp: new Date().toISOString(),
       url: typeof window !== "undefined" ? window.location.href : "SSR",
-    });
+    };
+
+    // In development, use console.log to avoid Next.js error interception
+    // In production, error tracking services will handle this
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[Error Page] ${errorType}:`, errorDetails);
+    } else {
+      console.error(`Error page rendered: ${errorType}`, errorDetails);
+    }
 
     // Optional: Send to error tracking service
     // Example: Sentry.captureMessage(`Error page: ${errorType}`, 'error');
   }, [errorType]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 transition-colors">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+        <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow dark:shadow-gray-700/50 sm:rounded-lg sm:px-10 transition-all">
           {/* Error Icon */}
           <div className="flex justify-center mb-6">
-            <div className="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full">
-              <AlertCircle className="w-8 h-8 text-red-600" />
+            <div className="flex items-center justify-center w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full transition-colors">
+              <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
             </div>
           </div>
 
           {/* Error Content */}
           <div className="text-center">
             {errorInfo.statusCode && (
-              <p className="text-sm font-medium text-gray-500 mb-2">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 transition-colors">
                 Error {errorInfo.statusCode}
               </p>
             )}
 
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 transition-colors">
               {errorInfo.title}
             </h1>
 
-            <p className="text-lg text-gray-600 mb-4">{errorInfo.message}</p>
+            <p className="text-lg text-gray-600 dark:text-gray-300 mb-4 transition-colors">
+              {errorInfo.message}
+            </p>
 
-            <p className="text-sm text-gray-500 mb-8">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 transition-colors">
               {errorInfo.description}
             </p>
 
@@ -116,7 +126,7 @@ const ErrorPage: React.FC = () => {
             <div className="space-y-3">
               <button
                 onClick={handleRetry}
-                className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 transition-all duration-200"
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Try Again
@@ -125,7 +135,7 @@ const ErrorPage: React.FC = () => {
               <div className="flex space-x-3">
                 <button
                   onClick={handleGoBack}
-                  className="flex-1 flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  className="flex-1 flex justify-center items-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 transition-all duration-200"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Go Back
@@ -133,7 +143,7 @@ const ErrorPage: React.FC = () => {
 
                 <button
                   onClick={handleGoHome}
-                  className="flex-1 flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  className="flex-1 flex justify-center items-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 transition-all duration-200"
                 >
                   <Home className="w-4 h-4 mr-2" />
                   Home
@@ -142,19 +152,19 @@ const ErrorPage: React.FC = () => {
             </div>
 
             {/* Additional Help */}
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <p className="text-xs text-gray-500">
+            <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700 transition-colors">
+              <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
                 If you continue to experience issues, please contact{" "}
                 <a
                   href="mailto:support@yourapp.com"
-                  className="text-blue-600 hover:text-blue-500"
+                  className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                 >
                   support@yourapp.com
                 </a>
               </p>
 
               {/* Error ID for support reference */}
-              <p className="text-xs text-gray-400 mt-2">
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 transition-colors">
                 Error ID: {Date.now().toString(36).toUpperCase()}
               </p>
             </div>

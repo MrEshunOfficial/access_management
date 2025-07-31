@@ -86,9 +86,8 @@ function getRoleBasedRedirectUrl(role: string, baseUrl: string, callbackUrl?: st
 }
 
 async function generateSessionId(): Promise<string> {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  // Use Node.js crypto instead of browser crypto for server-side
+  return crypto.randomBytes(32).toString('hex');
 }
 
 export async function invalidateUserSessions(userId: string) {
@@ -128,79 +127,49 @@ export const authOptions: NextAuthConfig = {
     updateAge: 60 * 60,
   },
   
-  // Add cookie configuration for cross-origin requests
+  // Simplified cookie configuration - remove domain restriction for testing
   cookies: {
     sessionToken: {
       name: `next-auth.session-token`,
       options: {
         httpOnly: true,
-        sameSite: 'none', // Required for cross-origin requests
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         path: '/',
-        secure: true, // Required when sameSite is 'none'
-        domain: '.vercel.app' // Allow cookies across your vercel subdomains
+        secure: process.env.NODE_ENV === 'production',
+        // Remove domain restriction for local testing
+        ...(process.env.NODE_ENV === 'production' && { domain: '.vercel.app' })
       }
     },
     callbackUrl: {
       name: `next-auth.callback-url`,
       options: {
-        sameSite: 'none',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         path: '/',
-        secure: true,
-        domain: '.vercel.app'
+        secure: process.env.NODE_ENV === 'production',
+        ...(process.env.NODE_ENV === 'production' && { domain: '.vercel.app' })
       }
     },
     csrfToken: {
       name: `next-auth.csrf-token`,
       options: {
         httpOnly: true,
-        sameSite: 'none',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         path: '/',
-        secure: true,
-        domain: '.vercel.app'
-      }
-    },
-    pkceCodeVerifier: {
-      name: `next-auth.pkce.code_verifier`,
-      options: {
-        httpOnly: true,
-        sameSite: 'none',
-        path: '/',
-        secure: true,
-        maxAge: 900,
-        domain: '.vercel.app'
-      }
-    },
-    state: {
-      name: `next-auth.state`,
-      options: {
-        httpOnly: true,
-        sameSite: 'none',
-        path: '/',
-        secure: true,
-        maxAge: 900,
-        domain: '.vercel.app'
-      }
-    },
-    nonce: {
-      name: `next-auth.nonce`,
-      options: {
-        httpOnly: true,
-        sameSite: 'none',
-        path: '/',
-        secure: true,
-        domain: '.vercel.app'
+        secure: process.env.NODE_ENV === 'production',
+        ...(process.env.NODE_ENV === 'production' && { domain: '.vercel.app' })
       }
     }
   },
   
-  // Ensure secure cookies are used
-  useSecureCookies: true,
+  // Set useSecureCookies based on environment
+  useSecureCookies: process.env.NODE_ENV === 'production',
   
   pages: {
-    signIn: "/auth/users/login",
-    signOut: "/auth/users/login",
-    error: "/auth/users/error",
+    signIn: "/auth/user/login",
+    signOut: "/auth/user/logout",
+    error: "/auth/user/error",
   },
+  
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -252,18 +221,18 @@ export const authOptions: NextAuthConfig = {
             role: user.role,
             provider: user.provider,
             providerId: user.providerId,
-            createdAt: user.createdAt,
-            updatedAt: user.updatedAt,
           };
         } catch (error) {
           console.error("Authorization error:", error);
-          throw error;
+          return null; // Return null instead of throwing error
         }
       },
     }),
   ],
+  
   callbacks: {
     async jwt({ token, user, account }) {
+      // Cleanup sessions occasionally
       if (Math.random() < 0.01) {
         cleanupExpiredSessions();
       }
@@ -283,6 +252,7 @@ export const authOptions: NextAuthConfig = {
         });
       }
 
+      // Update last accessed time for existing sessions
       if (token.sessionId && activeSessions.has(token.sessionId as string)) {
         const session = activeSessions.get(token.sessionId as string);
         if (session) {
@@ -298,6 +268,7 @@ export const authOptions: NextAuthConfig = {
       const isLoggedIn = !!auth?.user;
       const path = nextUrl.pathname;
       
+      // Update session activity
       if (isLoggedIn && auth.sessionId) {
         const session = activeSessions.get(auth.sessionId);
         if (session) {
@@ -306,6 +277,7 @@ export const authOptions: NextAuthConfig = {
         }
       }
 
+      // Handle public paths
       if (publicPaths.some((p) => path.startsWith(p))) {
         if (isLoggedIn && (path.startsWith("/user/login") || path.startsWith("/user/register"))) {
           const redirectUrl = getRoleBasedRedirectUrl(auth.user.role, nextUrl.origin);
@@ -314,14 +286,16 @@ export const authOptions: NextAuthConfig = {
         return true;
       }
       
+      // Handle private paths
       if (privatePaths.some((p) => path.startsWith(p))) {
         if (!isLoggedIn) {
           const callbackUrl = encodeURIComponent(path);
           return Response.redirect(new URL(`/user/login?callbackUrl=${callbackUrl}`, nextUrl));
         }
-        return isLoggedIn;
+        return true;
       }
       
+      // Handle root path
       if (path === "/") {
         if (!isLoggedIn) {
           return Response.redirect(new URL("/user/login", nextUrl));
@@ -359,9 +333,8 @@ export const authOptions: NextAuthConfig = {
         } else {
           if (account) {
             if (dbUser.provider && dbUser.provider !== account.provider && dbUser.provider !== "credentials") {
-              throw new Error(
-                `This email is already registered with ${dbUser.provider}. Please sign in with ${dbUser.provider}.`
-              );
+              console.error(`Email already registered with ${dbUser.provider}`);
+              return false;
             }
             
             if (!dbUser.provider || !dbUser.providerId) {
@@ -372,6 +345,7 @@ export const authOptions: NextAuthConfig = {
           }
         }
 
+        // Update user object with database values
         user.id = dbUser._id.toString();
         user.role = dbUser.role;
         user.provider = dbUser.provider;
@@ -407,6 +381,7 @@ export const authOptions: NextAuthConfig = {
           }
         }
         
+        // Fallback to token data
         session.user.id = token.id as string;
         session.user.role = token.role as string || 'user';
         session.user.email = token.email as string;
@@ -416,7 +391,9 @@ export const authOptions: NextAuthConfig = {
 
         return session;
 
-      } catch {
+      } catch (error) {
+        console.error("Session callback error:", error);
+        // Fallback to token data on error
         session.user.id = token.id as string;
         session.user.role = token.role as string || 'user';
         session.user.email = token.email as string;
