@@ -27,6 +27,8 @@ interface UserSession {
 export async function GET(request: NextRequest) {
   try {
     let session: UserSession | null = null;
+    const origin = request.headers.get('origin');
+    const isFromDifferentDomain = origin && !origin.includes('access-management-xi.vercel.app');
 
     // First, try to get session from Authorization header (token-based)
     const authHeader = request.headers.get('authorization');
@@ -48,7 +50,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Fallback to cookie-based session if no valid token
+    // Try cookie-based session (this will only work for same-domain requests)
     if (!session) {
       const cookieSession = await auth();
       if (cookieSession?.user) {
@@ -57,14 +59,21 @@ export async function GET(request: NextRequest) {
     }
 
     if (!session?.user) {
+      // If request is from a different domain and no valid token, suggest login redirect
+      const message = isFromDifferentDomain 
+        ? 'Cross-domain authentication required. Please redirect to login.'
+        : 'No active session found';
+        
       return NextResponse.json(
         {
           authenticated: false,
-          message: 'No active session found'
+          message,
+          loginUrl: `${request.nextUrl.origin}/auth/user/login`,
+          requiresRedirect: isFromDifferentDomain
         },
         {
           status: 401,
-          headers: getCorsHeaders()
+          headers: getCorsHeaders(origin)
         }
       );
     }
@@ -107,7 +116,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Set CORS headers
-    const corsHeaders = getCorsHeaders();
+    const corsHeaders = getCorsHeaders(origin);
     Object.entries(corsHeaders).forEach(([key, value]) => {
       response.headers.set(key, value);
     });
@@ -131,22 +140,28 @@ export async function GET(request: NextRequest) {
 }
 
 // Handle preflight requests for CORS
-export async function OPTIONS() {
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin');
   return new NextResponse(null, {
     status: 200,
-    headers: getCorsHeaders(),
+    headers: getCorsHeaders(origin),
   });
 }
 
-function getCorsHeaders(): Record<string, string> {
+function getCorsHeaders(origin?: string | null): Record<string, string> {
   const allowedOrigins = [
     process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'https://errandmate.vercel.app',
     'http://localhost:3001', // For development
     'http://localhost:3000', // For development
   ];
 
+  // Use the requesting origin if it's in our allowed list, otherwise use the first one
+  const allowedOrigin = origin && allowedOrigins.includes(origin) 
+    ? origin 
+    : allowedOrigins[0];
+
   return {
-    'Access-Control-Allow-Origin': allowedOrigins[0], // You might want to make this dynamic
+    'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
