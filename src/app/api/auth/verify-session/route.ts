@@ -6,6 +6,10 @@ import { NextResponse } from 'next/server';
 function getCorsHeaders() {
   const allowedOrigin = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || 'https://errandmate.vercel.app';
   
+  console.log('🔧 CORS Debug Info:');
+  console.log('- NEXT_PUBLIC_AUTH_SERVICE_URL:', process.env.NEXT_PUBLIC_AUTH_SERVICE_URL);
+  console.log('- Allowed Origin:', allowedOrigin);
+  
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Credentials': 'true',
@@ -15,13 +19,23 @@ function getCorsHeaders() {
 }
 
 export async function GET() {
+  console.log('🚀 GET /api/auth/verify-session called');
+  
   try {
     // Get the session using your NextAuth configuration
     const session = await auth();
+    console.log('📋 Session from auth():', session ? 'Session exists' : 'No session');
+    console.log('📋 Session details:', {
+      hasUser: !!session?.user,
+      userId: session?.user?.id,
+      sessionId: session?.sessionId
+    });
     
     const corsHeaders = getCorsHeaders();
+    console.log('🔧 CORS Headers:', corsHeaders);
     
     if (!session?.user) {
+      console.log('❌ No active session found, returning 401');
       return NextResponse.json(
         { 
           authenticated: false,
@@ -34,10 +48,7 @@ export async function GET() {
       );
     }
 
-    // Verify session is still active in your session management
-    if (session.sessionId) {
-      // Optionally, you can add additional checks here if needed
-    }
+    console.log('✅ Active session found, returning user data');
     
     const response = NextResponse.json({
       authenticated: true,
@@ -57,7 +68,7 @@ export async function GET() {
     return response;
     
   } catch (error: unknown) {
-    console.error('Session verification error:', error);
+    console.error('💥 Session verification error:', error);
     
     const corsHeaders = getCorsHeaders();
     
@@ -77,7 +88,10 @@ export async function GET() {
 
 // Handle preflight requests for CORS
 export async function OPTIONS() {
+  console.log('🔧 OPTIONS /api/auth/verify-session called (CORS preflight)');
+  
   const corsHeaders = getCorsHeaders();
+  console.log('🔧 Preflight CORS Headers:', corsHeaders);
   
   return new NextResponse(null, {
     status: 200,
