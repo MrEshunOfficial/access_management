@@ -197,9 +197,9 @@ export const authOptions: NextAuthConfig = {
   useSecureCookies: true,
   
   pages: {
-    signIn: "/users/login",
-    signOut: "/users/login",
-    error: "/users/error",
+    signIn: "/auth/users/login",
+    signOut: "/auth/users/login",
+    error: "/auth/users/error",
   },
   providers: [
     GoogleProvider({
