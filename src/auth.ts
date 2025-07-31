@@ -198,9 +198,9 @@ export const authOptions: NextAuthConfig = {
   useSecureCookies: process.env.NODE_ENV === 'production',
   
   pages: {
-    signIn: "/user/login", // Changed from "/auth/users/login" to match your auth.config
-    signOut: "/user/login",
-    error: "/user/error", // Make sure this page exists
+    signIn: "/auth/user/login", // Changed from "/auth/users/login" to match your auth.config
+    signOut: "/auth/user/login",
+    error: "/auth/user/error", // Make sure this page exists
   },
   
   providers: [
@@ -215,9 +215,9 @@ export const authOptions: NextAuthConfig = {
         },
       },
       // Add these for production
-      httpOptions: {
-        timeout: 10000,
-      },
+      // httpOptions: {
+      //   timeout: 10000,
+      // },
     }),
     CredentialsProvider({
       name: "Credentials",
