@@ -127,6 +127,75 @@ export const authOptions: NextAuthConfig = {
     maxAge: 24 * 60 * 60,
     updateAge: 60 * 60,
   },
+  
+  // Add cookie configuration for cross-origin requests
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'none', // Required for cross-origin requests
+        path: '/',
+        secure: true, // Required when sameSite is 'none'
+        domain: '.vercel.app' // Allow cookies across your vercel subdomains
+      }
+    },
+    callbackUrl: {
+      name: `next-auth.callback-url`,
+      options: {
+        sameSite: 'none',
+        path: '/',
+        secure: true,
+        domain: '.vercel.app'
+      }
+    },
+    csrfToken: {
+      name: `next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'none',
+        path: '/',
+        secure: true,
+        domain: '.vercel.app'
+      }
+    },
+    pkceCodeVerifier: {
+      name: `next-auth.pkce.code_verifier`,
+      options: {
+        httpOnly: true,
+        sameSite: 'none',
+        path: '/',
+        secure: true,
+        maxAge: 900,
+        domain: '.vercel.app'
+      }
+    },
+    state: {
+      name: `next-auth.state`,
+      options: {
+        httpOnly: true,
+        sameSite: 'none',
+        path: '/',
+        secure: true,
+        maxAge: 900,
+        domain: '.vercel.app'
+      }
+    },
+    nonce: {
+      name: `next-auth.nonce`,
+      options: {
+        httpOnly: true,
+        sameSite: 'none',
+        path: '/',
+        secure: true,
+        domain: '.vercel.app'
+      }
+    }
+  },
+  
+  // Ensure secure cookies are used
+  useSecureCookies: true,
+  
   pages: {
     signIn: "/user/login",
     signOut: "/user/login",
