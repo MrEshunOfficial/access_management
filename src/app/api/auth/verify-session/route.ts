@@ -44,7 +44,7 @@ export async function GET() {
     });
 
     // Add CORS headers
-    response.headers.set('Access-Control-Allow-Origin', process.env.NEXT_PUBLIC_USER_SERVICE_URL || '*');
+    response.headers.set('Access-Control-Allow-Origin', process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'https://errandmate.vercel.app');
     response.headers.set('Access-Control-Allow-Credentials', 'true');
     response.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
@@ -62,7 +62,7 @@ export async function GET() {
       { 
         status: 500,
         headers: {
-          'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_USER_SERVICE_URL || '*',
+          'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'https://errandmate.vercel.app',
           'Access-Control-Allow-Credentials': 'true',
           'Access-Control-Allow-Methods': 'GET, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type',
@@ -77,7 +77,7 @@ export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_USER_SERVICE_URL || '*',
+      'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'https://errandmate.vercel.app',
       'Access-Control-Allow-Credentials': 'true',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
