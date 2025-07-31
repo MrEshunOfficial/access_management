@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 
 // Helper function to get CORS headers
 function getCorsHeaders() {
-  const allowedOrigin = process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'https://errandmate.vercel.app';
+  const allowedOrigin = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || 'https://errandmate.vercel.app';
   
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
