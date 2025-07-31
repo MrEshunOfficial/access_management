@@ -86,8 +86,9 @@ function getRoleBasedRedirectUrl(role: string, baseUrl: string, callbackUrl?: st
 }
 
 async function generateSessionId(): Promise<string> {
-  // Use Node.js crypto instead of browser crypto for server-side
-  return crypto.randomBytes(32).toString('hex');
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 export async function invalidateUserSessions(userId: string) {
@@ -126,83 +127,11 @@ export const authOptions: NextAuthConfig = {
     maxAge: 24 * 60 * 60,
     updateAge: 60 * 60,
   },
-  
-  // Production-optimized cookie configuration
-  cookies: {
-    sessionToken: {
-      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax', // Use 'lax' for better compatibility
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        // Only set domain if you need cross-subdomain support
-        ...(process.env.COOKIE_DOMAIN && { domain: process.env.COOKIE_DOMAIN })
-      }
-    },
-    callbackUrl: {
-      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.callback-url`,
-      options: {
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        ...(process.env.COOKIE_DOMAIN && { domain: process.env.COOKIE_DOMAIN })
-      }
-    },
-    csrfToken: {
-      name: `${process.env.NODE_ENV === 'production' ? '__Host-' : ''}next-auth.csrf-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        // __Host- prefix requires no domain and path must be '/'
-        ...(process.env.NODE_ENV !== 'production' && process.env.COOKIE_DOMAIN && { domain: process.env.COOKIE_DOMAIN })
-      }
-    },
-    pkceCodeVerifier: {
-      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.pkce.code_verifier`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 900,
-        ...(process.env.COOKIE_DOMAIN && { domain: process.env.COOKIE_DOMAIN })
-      }
-    },
-    state: {
-      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.state`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 900,
-        ...(process.env.COOKIE_DOMAIN && { domain: process.env.COOKIE_DOMAIN })
-      }
-    },
-    nonce: {
-      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.nonce`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        ...(process.env.COOKIE_DOMAIN && { domain: process.env.COOKIE_DOMAIN })
-      }
-    }
-  },
-  
-  // Set useSecureCookies based on environment
-  useSecureCookies: process.env.NODE_ENV === 'production',
-  
   pages: {
-    signIn: "/auth/user/login", // Changed from "/auth/users/login" to match your auth.config
-    signOut: "/auth/user/login",
-    error: "/auth/user/error", // Make sure this page exists
+    signIn: "/user/login",
+    signOut: "/user/login",
+    error: "/user/error",
   },
-  
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -214,10 +143,6 @@ export const authOptions: NextAuthConfig = {
           response_type: "code",
         },
       },
-      // Add these for production
-      // httpOptions: {
-      //   timeout: 10000,
-      // },
     }),
     CredentialsProvider({
       name: "Credentials",
@@ -258,18 +183,18 @@ export const authOptions: NextAuthConfig = {
             role: user.role,
             provider: user.provider,
             providerId: user.providerId,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
           };
         } catch (error) {
           console.error("Authorization error:", error);
-          return null; // Return null instead of throwing error
+          throw error;
         }
       },
     }),
   ],
-  
   callbacks: {
     async jwt({ token, user, account }) {
-      // Cleanup sessions occasionally
       if (Math.random() < 0.01) {
         cleanupExpiredSessions();
       }
@@ -289,7 +214,6 @@ export const authOptions: NextAuthConfig = {
         });
       }
 
-      // Update last accessed time for existing sessions
       if (token.sessionId && activeSessions.has(token.sessionId as string)) {
         const session = activeSessions.get(token.sessionId as string);
         if (session) {
@@ -305,7 +229,6 @@ export const authOptions: NextAuthConfig = {
       const isLoggedIn = !!auth?.user;
       const path = nextUrl.pathname;
       
-      // Update session activity
       if (isLoggedIn && auth.sessionId) {
         const session = activeSessions.get(auth.sessionId);
         if (session) {
@@ -314,7 +237,6 @@ export const authOptions: NextAuthConfig = {
         }
       }
 
-      // Handle public paths
       if (publicPaths.some((p) => path.startsWith(p))) {
         if (isLoggedIn && (path.startsWith("/user/login") || path.startsWith("/user/register"))) {
           const redirectUrl = getRoleBasedRedirectUrl(auth.user.role, nextUrl.origin);
@@ -323,16 +245,14 @@ export const authOptions: NextAuthConfig = {
         return true;
       }
       
-      // Handle private paths
       if (privatePaths.some((p) => path.startsWith(p))) {
         if (!isLoggedIn) {
           const callbackUrl = encodeURIComponent(path);
           return Response.redirect(new URL(`/user/login?callbackUrl=${callbackUrl}`, nextUrl));
         }
-        return true;
+        return isLoggedIn;
       }
       
-      // Handle root path
       if (path === "/") {
         if (!isLoggedIn) {
           return Response.redirect(new URL("/user/login", nextUrl));
@@ -370,8 +290,9 @@ export const authOptions: NextAuthConfig = {
         } else {
           if (account) {
             if (dbUser.provider && dbUser.provider !== account.provider && dbUser.provider !== "credentials") {
-              console.error(`Email already registered with ${dbUser.provider}`);
-              return false;
+              throw new Error(
+                `This email is already registered with ${dbUser.provider}. Please sign in with ${dbUser.provider}.`
+              );
             }
             
             if (!dbUser.provider || !dbUser.providerId) {
@@ -382,7 +303,6 @@ export const authOptions: NextAuthConfig = {
           }
         }
 
-        // Update user object with database values
         user.id = dbUser._id.toString();
         user.role = dbUser.role;
         user.provider = dbUser.provider;
@@ -418,7 +338,6 @@ export const authOptions: NextAuthConfig = {
           }
         }
         
-        // Fallback to token data
         session.user.id = token.id as string;
         session.user.role = token.role as string || 'user';
         session.user.email = token.email as string;
@@ -428,9 +347,7 @@ export const authOptions: NextAuthConfig = {
 
         return session;
 
-      } catch (error) {
-        console.error("Session callback error:", error);
-        // Fallback to token data on error
+      } catch {
         session.user.id = token.id as string;
         session.user.role = token.role as string || 'user';
         session.user.email = token.email as string;

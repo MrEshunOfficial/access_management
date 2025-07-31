@@ -16,7 +16,7 @@ export async function GET() {
         { 
           status: 401,
           headers: {
-            'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_USER_SERVICE_URL || '*',
+            'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'https://errandmate.vercel.app',
             'Access-Control-Allow-Credentials': 'true',
             'Access-Control-Allow-Methods': 'GET, OPTIONS',
             'Access-Control-Allow-Headers': 'Content-Type',
@@ -27,7 +27,16 @@ export async function GET() {
 
     // Verify session is still active in your session management
     if (session.sessionId) {
-      // Optionally, you can add additional checks here if needed
+      // Here you can add additional logic to verify the session ID if needed
+      // For example, check if the session ID exists in your database or cache
+      // This is a placeholder for your session verification logic
+      // const isValidSession = await verifySessionId(session.sessionId);
+      // if (!isValidSession) {
+      //   return NextResponse.json(
+      //     { authenticated: false, message: 'Invalid session' },
+      //     { status: 401 }
+      //   );
+      // }
     }
     
     const response = NextResponse.json({
@@ -44,7 +53,7 @@ export async function GET() {
     });
 
     // Add CORS headers
-    response.headers.set('Access-Control-Allow-Origin', process.env.NEXT_PUBLIC_USER_SERVICE_URL || '*');
+    response.headers.set('Access-Control-Allow-Origin', process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'https://errandmate.vercel.app');
     response.headers.set('Access-Control-Allow-Credentials', 'true');
     response.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
@@ -62,7 +71,7 @@ export async function GET() {
       { 
         status: 500,
         headers: {
-          'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_USER_SERVICE_URL || '*',
+          'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'https://errandmate.vercel.app',
           'Access-Control-Allow-Credentials': 'true',
           'Access-Control-Allow-Methods': 'GET, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type',
@@ -77,7 +86,7 @@ export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_USER_SERVICE_URL || '*',
+      'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'https://errandmate.vercel.app',
       'Access-Control-Allow-Credentials': 'true',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
