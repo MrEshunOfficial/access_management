@@ -2,10 +2,24 @@
 import { auth } from '@/auth';
 import { NextResponse } from 'next/server';
 
+// Helper function to get CORS headers
+function getCorsHeaders() {
+  const allowedOrigin = process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'https://errandmate.vercel.app';
+  
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cookie',
+  };
+}
+
 export async function GET() {
   try {
     // Get the session using your NextAuth configuration
     const session = await auth();
+    
+    const corsHeaders = getCorsHeaders();
     
     if (!session?.user) {
       return NextResponse.json(
@@ -15,12 +29,7 @@ export async function GET() {
         }, 
         { 
           status: 401,
-          headers: {
-            'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_USER_SERVICE_URL || '*',
-            'Access-Control-Allow-Credentials': 'true',
-            'Access-Control-Allow-Methods': 'GET, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
-          }
+          headers: corsHeaders
         }
       );
     }
@@ -41,32 +50,26 @@ export async function GET() {
         providerId: session.user.providerId
       },
       sessionId: session.sessionId
+    }, {
+      headers: corsHeaders
     });
-
-    // Add CORS headers
-    response.headers.set('Access-Control-Allow-Origin', process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'https://errandmate.vercel.app');
-    response.headers.set('Access-Control-Allow-Credentials', 'true');
-    response.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
     
     return response;
     
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Session verification error:', error);
+    
+    const corsHeaders = getCorsHeaders();
     
     return NextResponse.json(
       { 
         authenticated: false,
-        message: 'Session verification failed'
+        message: 'Session verification failed',
+        error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
       }, 
       { 
         status: 500,
-        headers: {
-          'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'https://errandmate.vercel.app',
-          'Access-Control-Allow-Credentials': 'true',
-          'Access-Control-Allow-Methods': 'GET, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
-        }
+        headers: corsHeaders
       }
     );
   }
@@ -74,13 +77,10 @@ export async function GET() {
 
 // Handle preflight requests for CORS
 export async function OPTIONS() {
+  const corsHeaders = getCorsHeaders();
+  
   return new NextResponse(null, {
     status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'https://errandmate.vercel.app',
-      'Access-Control-Allow-Credentials': 'true',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
+    headers: corsHeaders,
   });
 }
