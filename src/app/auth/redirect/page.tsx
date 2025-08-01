@@ -12,8 +12,8 @@ function getRoleBasedRedirectUrl(
 ): string {
   if (
     callbackUrl &&
-    !callbackUrl.includes("/user/login") &&
-    !callbackUrl.includes("/user/register") &&
+    !callbackUrl.includes("/auth/users/login") &&
+    !callbackUrl.includes("/auth/users/register") &&
     callbackUrl !== "/"
   ) {
     if (role === "admin" || role === "super_admin") {
@@ -35,7 +35,7 @@ function getRoleBasedRedirectUrl(
       return `${baseUrl}/admin-console`;
     case "user":
       return process.env.NEXT_PUBLIC_AUTH_ACCESS_URL
-        ? `${process.env.NEXT_PUBLIC_AUTH_ACCESS_URL}/profile`
+        ? `${process.env.NEXT_PUBLIC_USER_SERVICE_URL}/profile`
         : `${baseUrl}/profile`;
     default:
       return `${baseUrl}/user/login`;
