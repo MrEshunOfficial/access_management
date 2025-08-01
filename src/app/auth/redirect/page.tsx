@@ -34,8 +34,13 @@ function getRoleBasedRedirectUrl(
     case "super_admin":
       return `${baseUrl}/admin-console`;
     case "user":
+<<<<<<< HEAD
       return process.env.NEXT_PUBLIC_AUTH_ACCESS_URL
         ? `${process.env.NEXT_PUBLIC_USER_SERVICE_URL}/profile`
+=======
+      return process.env.USER_SERVICE_URL
+        ? `${process.env.USER_SERVICE_URL}/profile`
+>>>>>>> 2f792cf023e0f32cc52f3497d410f7404a1f70ba
         : `${baseUrl}/profile`;
     default:
       return `${baseUrl}/user/login`;
@@ -108,8 +113,7 @@ export default function AuthRedirect() {
                 className="w-10 h-10 text-white animate-pulse"
                 fill="none"
                 stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+                viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -135,12 +139,10 @@ export default function AuthRedirect() {
               <div className="w-16 h-16 border-4 border-slate-200 dark:border-slate-700 border-t-blue-600 dark:border-t-blue-400 rounded-full animate-spin"></div>
               <div
                 className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-indigo-400 dark:border-t-indigo-300 rounded-full animate-spin"
-                style={{ animationDelay: "0.15s" }}
-              ></div>
+                style={{ animationDelay: "0.15s" }}></div>
               <div
                 className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-purple-300 dark:border-t-purple-400 rounded-full animate-spin"
-                style={{ animationDelay: "0.3s" }}
-              ></div>
+                style={{ animationDelay: "0.3s" }}></div>
             </div>
 
             {/* Progress Dots */}
@@ -148,12 +150,10 @@ export default function AuthRedirect() {
               <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
               <div
                 className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce"
-                style={{ animationDelay: "0.1s" }}
-              ></div>
+                style={{ animationDelay: "0.1s" }}></div>
               <div
                 className="w-2 h-2 bg-purple-600 rounded-full animate-bounce"
-                style={{ animationDelay: "0.2s" }}
-              ></div>
+                style={{ animationDelay: "0.2s" }}></div>
             </div>
 
             {/* Status Message */}
@@ -187,8 +187,7 @@ export default function AuthRedirect() {
                 className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+                viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
