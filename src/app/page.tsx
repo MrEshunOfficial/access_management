@@ -149,7 +149,7 @@ export default function AdminHomePage() {
         {/* Action Buttons for authenticated users */}
         <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
           <AdminAccessButton session={session} />
-          <Link href={`${process.env.NEXT_PUBLIC_USER_SERVICE_URL || ""}`}>
+          <Link href={`${process.env.NEXT_PUBLIC_USER_SERVICE_URL || "*"}`}>
             <Button
               variant="outline"
               className="relative group px-8 py-6 text-lg font-semibold rounded-2xl overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-xl border-2 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 min-w-[200px]"
@@ -174,7 +174,7 @@ export default function AdminHomePage() {
             {/* Logo/Title */}
             <div className="flex items-center gap-3">
               <Image
-                src="/errand_logo.jpg"
+                src="/favicon.png"
                 alt="ErrandMate Logo"
                 width={32}
                 height={32}
@@ -224,7 +224,6 @@ function AuthButtons() {
 
 function UserMenu() {
   const { data: session } = useSession();
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -233,23 +232,19 @@ function UserMenu() {
           className="relative flex items-center gap-3 px-3 py-2 h-10 rounded-full bg-white/20 dark:bg-gray-800/20 backdrop-blur-sm hover:bg-white/30 dark:hover:bg-gray-800/30 transition-all duration-300 border border-white/20 dark:border-gray-700/20"
         >
           <div className="w-8 h-8 rounded-full overflow-hidden relative bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
-            {session?.user?.image ? (
+            {session?.user?.image && (
               <Image
                 src={session.user.image}
-                alt={`${session?.user?.name || "User"}'s avatar`}
+                alt={`${session?.user?.name}`}
                 width={32}
                 height={32}
                 className="rounded-full object-cover w-full h-full"
                 sizes="32px"
               />
-            ) : (
-              <span className="text-white text-sm font-semibold">
-                {session?.user?.name?.[0]?.toUpperCase() || "U"}
-              </span>
             )}
           </div>
           <span className="hidden sm:inline text-sm font-medium truncate">
-            {session?.user?.name || "Account"}
+            {session?.user?.name}
           </span>
           <ChevronDown className="h-4 w-4 transition-transform duration-300" />
         </Button>
@@ -269,7 +264,7 @@ function UserMenu() {
         <DropdownMenuGroup className="p-2">
           <DropdownMenuItem className="rounded-xl hover:bg-white/50 dark:hover:bg-gray-800/50 transition-all duration-300">
             <Link
-              href={`/${process.env.USER_SERVICE_URL || "admin/users"}`}
+              href={`/${process.env.USER_SERVICE_URL}`}
               className="flex w-full items-center gap-3 p-2"
             >
               <User className="h-4 w-4" />

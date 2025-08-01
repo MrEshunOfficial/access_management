@@ -10,23 +10,7 @@ import crypto from "crypto";
 import { Types } from 'mongoose';
 import { checkAndGetUserRole } from "./lib/admin/adminService";
 
-// CREATE A SESSION MODEL FOR PERSISTENT SESSION STORAGE
-import mongoose from 'mongoose';
-
-const sessionSchema = new mongoose.Schema({
-  sessionId: { type: String, required: true, unique: true },
-  userId: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-  lastAccessed: { type: Date, default: Date.now },
-  expiresAt: { type: Date, default: () => new Date(Date.now() + 24 * 60 * 60 * 1000) }, // 24 hours
-});
-
-// Add index for automatic cleanup
-sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-sessionSchema.index({ userId: 1 });
-sessionSchema.index({ sessionId: 1 });
-
-const SessionModel = mongoose.models.Session || mongoose.model('Session', sessionSchema);
+const activeSessions = new Map<string, { userId: string; createdAt: Date; lastAccessed: Date }>();
 
 interface LeanUser {
   _id: Types.ObjectId;
@@ -75,8 +59,8 @@ interface CustomToken extends JWT {
 
 function getRoleBasedRedirectUrl(role: string, baseUrl: string, callbackUrl?: string): string {
   if (callbackUrl && 
-      !callbackUrl.includes('/user/login') && 
-      !callbackUrl.includes('/user/register') &&
+      !callbackUrl.includes('/auth/users/login') && 
+      !callbackUrl.includes('/auth/users/register') &&
       callbackUrl !== '/') {
     
     if ((role === 'admin' || role === 'super_admin')) {
@@ -97,7 +81,7 @@ function getRoleBasedRedirectUrl(role: string, baseUrl: string, callbackUrl?: st
         ? `${process.env.USER_SERVICE_URL}/profile`
         : `${baseUrl}/profile`;
     default:
-      return `${baseUrl}/user/login`;
+      return `${baseUrl}/auth/users/login`;
   }
 }
 
@@ -107,71 +91,32 @@ async function generateSessionId(): Promise<string> {
   return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-// REPLACE IN-MEMORY SESSION MANAGEMENT WITH DATABASE STORAGE
 export async function invalidateUserSessions(userId: string) {
-  try {
-    await connect();
-    await SessionModel.deleteMany({ userId });
-    console.log(`Invalidated all sessions for user: ${userId}`);
-  } catch (error) {
-    console.error('Error invalidating user sessions:', error);
-  }
-}
+  const sessionsToRemove: string[] = [];
 
-async function createSession(userId: string, sessionId: string) {
-  try {
-    await connect();
-    
-    // Create new session
-    await SessionModel.create({
-      sessionId,
-      userId,
-      createdAt: new Date(),
-      lastAccessed: new Date(),
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
-    });
-    
-    console.log(`Created session ${sessionId} for user ${userId}`);
-  } catch (error) {
-    console.error('Error creating session:', error);
-  }
-}
-
-async function updateSessionAccess(sessionId: string) {
-  try {
-    await connect();
-    
-    await SessionModel.findOneAndUpdate(
-      { sessionId },
-      { 
-        lastAccessed: new Date(),
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // Extend expiry
-      }
-    );
-  } catch (error) {
-    console.error('Error updating session access:', error);
-  }
-}
-
-async function isValidSession(sessionId: string): Promise<boolean> {
-  try {
-    await connect();
-    
-    const session = await SessionModel.findOne({
-      sessionId,
-      expiresAt: { $gt: new Date() }
-    });
-    
-    if (session) {
-      // Update last accessed time
-      await updateSessionAccess(sessionId);
-      return true;
+  for (const [sessionId, session] of activeSessions.entries()) {
+    if (session.userId === userId) {
+      sessionsToRemove.push(sessionId);
     }
+  }
+
+  sessionsToRemove.forEach((sessionId) => {
+    activeSessions.delete(sessionId);
+  });
+}
+
+function cleanupExpiredSessions() {
+  const now = new Date();
+  const maxAge = 24 * 60 * 60 * 1000;
+  const inactivityTimeout = 4 * 60 * 60 * 1000;
+
+  for (const [sessionId, session] of activeSessions.entries()) {
+    const sessionAge = now.getTime() - session.createdAt.getTime();
+    const inactivityTime = now.getTime() - session.lastAccessed.getTime();
     
-    return false;
-  } catch (error) {
-    console.error('Error validating session:', error);
-    return false;
+    if (sessionAge > maxAge || inactivityTime > inactivityTimeout) {
+      activeSessions.delete(sessionId);
+    }
   }
 }
 
@@ -179,56 +124,15 @@ export const authOptions: NextAuthConfig = {
   secret: process.env.AUTH_SECRET,
   session: {
     strategy: "jwt",
-    maxAge: 24 * 60 * 60, // 24 hours
-    updateAge: 60 * 60, // 1 hour
+    maxAge: 24 * 60 * 60,
+    updateAge: 60 * 60,
   },
   
-  // PRODUCTION COOKIE CONFIGURATION FOR CROSS-DOMAIN
-  cookies: {
-    sessionToken: {
-      name: process.env.NODE_ENV === 'production' 
-        ? '__Secure-next-auth.session-token'
-        : 'next-auth.session-token',
-      options: {
-        httpOnly: true,
-        sameSite: 'none', // Changed to allow cross-site requests
-        path: '/',
-        secure: true, // Always true for production cross-domain
-        // Remove domain setting for cross-domain to work
-        // domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined
-      }
-    },
-    callbackUrl: {
-      name: process.env.NODE_ENV === 'production'
-        ? '__Secure-next-auth.callback-url'
-        : 'next-auth.callback-url',
-      options: {
-        httpOnly: true,
-        sameSite: 'none', // Changed for cross-domain
-        path: '/',
-        secure: true, // Always true for production cross-domain
-        // Remove domain setting
-      }
-    },
-    csrfToken: {
-      name: process.env.NODE_ENV === 'production'
-        ? '__Host-next-auth.csrf-token'
-        : 'next-auth.csrf-token',
-      options: {
-        httpOnly: true,
-        sameSite: 'none', // Changed for cross-domain
-        path: '/',
-        secure: true // Always true for production cross-domain
-      }
-    }
-  },
-
   pages: {
     signIn: "/auth/users/login",
     signOut: "/auth/users/login",
     error: "/auth/users/error",
   },
-  
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -290,10 +194,12 @@ export const authOptions: NextAuthConfig = {
       },
     }),
   ],
-  
   callbacks: {
     async jwt({ token, user, account }) {
-      // Create session on first login
+      if (Math.random() < 0.01) {
+        cleanupExpiredSessions();
+      }
+
       if (user) {
         token.id = user.id;
         token.role = user.role;
@@ -302,17 +208,18 @@ export const authOptions: NextAuthConfig = {
         const sessionId = await generateSessionId();
         token.sessionId = sessionId;
 
-        // Store session in database instead of memory
-        await createSession(user.id as string, sessionId);
+        activeSessions.set(sessionId, {
+          userId: user.id as string,
+          createdAt: new Date(),
+          lastAccessed: new Date(),
+        });
       }
 
-      // Validate existing session
-      if (token.sessionId) {
-        const isValid = await isValidSession(token.sessionId as string);
-        if (!isValid) {
-          // Session expired or invalid, clear token
-          console.log('Session expired, clearing token');
-          return {}; // This will force re-authentication
+      if (token.sessionId && activeSessions.has(token.sessionId as string)) {
+        const session = activeSessions.get(token.sessionId as string);
+        if (session) {
+          session.lastAccessed = new Date();
+          activeSessions.set(token.sessionId as string, session);
         }
       }
 
@@ -323,13 +230,11 @@ export const authOptions: NextAuthConfig = {
       const isLoggedIn = !!auth?.user;
       const path = nextUrl.pathname;
       
-      // Validate session in database
       if (isLoggedIn && auth.sessionId) {
-        const isValid = await isValidSession(auth.sessionId);
-        if (!isValid) {
-          // Session expired, redirect to login
-          const callbackUrl = encodeURIComponent(path);
-          return Response.redirect(new URL(`/auth/users/login?callbackUrl=${callbackUrl}`, nextUrl));
+        const session = activeSessions.get(auth.sessionId);
+        if (session) {
+          session.lastAccessed = new Date();
+          activeSessions.set(auth.sessionId, session);
         }
       }
 
@@ -417,26 +322,6 @@ export const authOptions: NextAuthConfig = {
         return session;
       }
 
-      // Validate session exists in database
-      if (token.sessionId) {
-        const isValid = await isValidSession(token.sessionId as string);
-        if (!isValid) {
-          console.log('Invalid session detected in session callback');
-          // Return empty session to force re-authentication
-          return {
-  user: {
-    id: token.id as string,
-    role: token.role as string || 'user',
-    email: token.email as string,
-    name: token.name as string,
-    provider: token.provider as string,
-    providerId: token.providerId as string,
-  },
-  expires: new Date(0).toISOString(),
-};
-        }
-      }
-
       try {
         await connect();
         
@@ -463,8 +348,7 @@ export const authOptions: NextAuthConfig = {
 
         return session;
 
-      } catch (error) {
-        console.error('Session callback error:', error);
+      } catch {
         session.user.id = token.id as string;
         session.user.role = token.role as string || 'user';
         session.user.email = token.email as string;
@@ -481,6 +365,7 @@ export const authOptions: NextAuthConfig = {
         return `${baseUrl}/auth/users/login`;
       }
       
+      // For OAuth callbacks, redirect to a custom handler that can access the session
       if (url.startsWith("/api/auth/callback/google") || url.startsWith("/api/auth/callback")) {
         return `${baseUrl}/auth/redirect`;
       }
@@ -518,6 +403,7 @@ export const authOptions: NextAuthConfig = {
         return url;
       }
 
+      // For all other cases, redirect to the role-based redirect handler
       return `${baseUrl}/auth/redirect`;
     },
   },
