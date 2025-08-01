@@ -183,7 +183,7 @@ export const authOptions: NextAuthConfig = {
     updateAge: 60 * 60, // 1 hour
   },
   
-  // PRODUCTION COOKIE CONFIGURATION
+  // PRODUCTION COOKIE CONFIGURATION FOR CROSS-DOMAIN
   cookies: {
     sessionToken: {
       name: process.env.NODE_ENV === 'production' 
@@ -191,12 +191,11 @@ export const authOptions: NextAuthConfig = {
         : 'next-auth.session-token',
       options: {
         httpOnly: true,
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        sameSite: 'none', // Changed to allow cross-site requests
         path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        domain: process.env.NODE_ENV === 'production' 
-          ? process.env.COOKIE_DOMAIN // Set this in your env vars
-          : undefined
+        secure: true, // Always true for production cross-domain
+        // Remove domain setting for cross-domain to work
+        // domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined
       }
     },
     callbackUrl: {
@@ -205,12 +204,10 @@ export const authOptions: NextAuthConfig = {
         : 'next-auth.callback-url',
       options: {
         httpOnly: true,
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        sameSite: 'none', // Changed for cross-domain
         path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        domain: process.env.NODE_ENV === 'production' 
-          ? process.env.COOKIE_DOMAIN
-          : undefined
+        secure: true, // Always true for production cross-domain
+        // Remove domain setting
       }
     },
     csrfToken: {
@@ -219,17 +216,17 @@ export const authOptions: NextAuthConfig = {
         : 'next-auth.csrf-token',
       options: {
         httpOnly: true,
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        sameSite: 'none', // Changed for cross-domain
         path: '/',
-        secure: process.env.NODE_ENV === 'production'
+        secure: true // Always true for production cross-domain
       }
     }
   },
 
   pages: {
-    signIn: "/user/login",
-    signOut: "/user/login",
-    error: "/user/error",
+    signIn: "/auth/users/login",
+    signOut: "/auth/users/login",
+    error: "/auth/users/error",
   },
   
   providers: [
@@ -332,12 +329,12 @@ export const authOptions: NextAuthConfig = {
         if (!isValid) {
           // Session expired, redirect to login
           const callbackUrl = encodeURIComponent(path);
-          return Response.redirect(new URL(`/user/login?callbackUrl=${callbackUrl}`, nextUrl));
+          return Response.redirect(new URL(`/auth/users/login?callbackUrl=${callbackUrl}`, nextUrl));
         }
       }
 
       if (publicPaths.some((p) => path.startsWith(p))) {
-        if (isLoggedIn && (path.startsWith("/user/login") || path.startsWith("/user/register"))) {
+        if (isLoggedIn && (path.startsWith("/auth/users/login") || path.startsWith("/auth/users/register"))) {
           const redirectUrl = getRoleBasedRedirectUrl(auth.user.role, nextUrl.origin);
           return Response.redirect(new URL(redirectUrl));
         }
@@ -347,14 +344,14 @@ export const authOptions: NextAuthConfig = {
       if (privatePaths.some((p) => path.startsWith(p))) {
         if (!isLoggedIn) {
           const callbackUrl = encodeURIComponent(path);
-          return Response.redirect(new URL(`/user/login?callbackUrl=${callbackUrl}`, nextUrl));
+          return Response.redirect(new URL(`/auth/users/login?callbackUrl=${callbackUrl}`, nextUrl));
         }
         return isLoggedIn;
       }
       
       if (path === "/") {
         if (!isLoggedIn) {
-          return Response.redirect(new URL("/user/login", nextUrl));
+          return Response.redirect(new URL("/auth/users/login", nextUrl));
         }
         const redirectUrl = getRoleBasedRedirectUrl(auth.user.role, nextUrl.origin);
         return Response.redirect(new URL(redirectUrl));
@@ -481,7 +478,7 @@ export const authOptions: NextAuthConfig = {
 
     async redirect({ url, baseUrl }) {
       if (url.includes("signOut") || url.includes("logout")) {
-        return `${baseUrl}/user/login`;
+        return `${baseUrl}/auth/users/login`;
       }
       
       if (url.startsWith("/api/auth/callback/google") || url.startsWith("/api/auth/callback")) {
