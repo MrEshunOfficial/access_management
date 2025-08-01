@@ -77,8 +77,7 @@ export default function AdminHomePage() {
         )}
         <Button
           className="relative group px-8 py-6 text-lg font-semibold text-white rounded-2xl overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl min-w-[200px]"
-          onClick={handleAccess}
-        >
+          onClick={handleAccess}>
           <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-blue-500 to-purple-600 transition-all duration-300" />
           <div className="absolute inset-0 bg-gradient-to-r from-blue-700 via-blue-600 to-purple-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <span className="relative flex items-center gap-3">
@@ -121,8 +120,7 @@ export default function AdminHomePage() {
             <Link href="/auth/users/register">
               <Button
                 variant="outline"
-                className="relative group px-8 py-6 text-lg font-semibold rounded-2xl overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-xl border-2 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 min-w-[200px]"
-              >
+                className="relative group px-8 py-6 text-lg font-semibold rounded-2xl overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-xl border-2 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 min-w-[200px]">
                 <span className="flex items-center gap-3 text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
                   <UserPlus className="w-6 h-6" />
                   Create Account
@@ -149,11 +147,10 @@ export default function AdminHomePage() {
         {/* Action Buttons for authenticated users */}
         <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
           <AdminAccessButton session={session} />
-          <Link href={`${process.env.NEXT_PUBLIC_USER_SERVICE_URL || "*"}`}>
+          <Link href={`${process.env.USER_SERVICE_URL || "*"}`}>
             <Button
               variant="outline"
-              className="relative group px-8 py-6 text-lg font-semibold rounded-2xl overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-xl border-2 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 min-w-[200px]"
-            >
+              className="relative group px-8 py-6 text-lg font-semibold rounded-2xl overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-xl border-2 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 min-w-[200px]">
               <span className="flex items-center gap-3 text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
                 <Home className="w-6 h-6" />
                 Main Platform
@@ -208,8 +205,7 @@ function AuthButtons() {
       <Link href="/auth/users/login">
         <Button
           variant="ghost"
-          className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-        >
+          className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
           Sign In
         </Button>
       </Link>
@@ -229,8 +225,7 @@ function UserMenu() {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="relative flex items-center gap-3 px-3 py-2 h-10 rounded-full bg-white/20 dark:bg-gray-800/20 backdrop-blur-sm hover:bg-white/30 dark:hover:bg-gray-800/30 transition-all duration-300 border border-white/20 dark:border-gray-700/20"
-        >
+          className="relative flex items-center gap-3 px-3 py-2 h-10 rounded-full bg-white/20 dark:bg-gray-800/20 backdrop-blur-sm hover:bg-white/30 dark:hover:bg-gray-800/30 transition-all duration-300 border border-white/20 dark:border-gray-700/20">
           <div className="w-8 h-8 rounded-full overflow-hidden relative bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
             {session?.user?.image && (
               <Image
@@ -251,8 +246,7 @@ function UserMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="w-56 bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl border border-white/20 dark:border-gray-800/30 rounded-2xl shadow-2xl"
-      >
+        className="w-56 bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl border border-white/20 dark:border-gray-800/30 rounded-2xl shadow-2xl">
         <div className="px-4 py-3 border-b border-gray-200/50 dark:border-gray-700/50">
           <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
             {session?.user?.name || "User"}
@@ -265,8 +259,7 @@ function UserMenu() {
           <DropdownMenuItem className="rounded-xl hover:bg-white/50 dark:hover:bg-gray-800/50 transition-all duration-300">
             <Link
               href={`/${process.env.USER_SERVICE_URL}`}
-              className="flex w-full items-center gap-3 p-2"
-            >
+              className="flex w-full items-center gap-3 p-2">
               <User className="h-4 w-4" />
               Profile
             </Link>
@@ -291,20 +284,17 @@ function ThemeSwitcher() {
           variant="ghost"
           size="icon"
           className="relative w-10 h-10 rounded-full bg-white/20 dark:bg-gray-800/20 backdrop-blur-sm hover:bg-white/30 dark:hover:bg-gray-800/30 transition-all duration-300 border border-white/20 dark:border-gray-700/20"
-          aria-label="Toggle theme"
-        >
+          aria-label="Toggle theme">
           <Sun className="h-5 w-5 rotate-0 scale-100 transition-all duration-300 dark:rotate-90 dark:scale-0" />
           <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all duration-300 dark:rotate-0 dark:scale-100" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl border border-white/20 dark:border-gray-800/30 rounded-2xl shadow-2xl min-w-[160px]"
-      >
+        className="bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl border border-white/20 dark:border-gray-800/30 rounded-2xl shadow-2xl min-w-[160px]">
         <DropdownMenuItem
           onClick={() => setTheme("light")}
-          className="cursor-pointer rounded-xl hover:bg-white/50 dark:hover:bg-gray-800/50 transition-all duration-300"
-        >
+          className="cursor-pointer rounded-xl hover:bg-white/50 dark:hover:bg-gray-800/50 transition-all duration-300">
           <Sun className="mr-3 h-4 w-4" />
           <span>Light</span>
           {theme === "light" && (
@@ -313,16 +303,14 @@ function ThemeSwitcher() {
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => setTheme("dark")}
-          className="cursor-pointer rounded-xl hover:bg-white/50 dark:hover:bg-gray-800/50 transition-all duration-300"
-        >
+          className="cursor-pointer rounded-xl hover:bg-white/50 dark:hover:bg-gray-800/50 transition-all duration-300">
           <Moon className="mr-3 h-4 w-4" />
           <span>Dark</span>
           {theme === "dark" && <span className="ml-auto text-blue-600">✓</span>}
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => setTheme("system")}
-          className="cursor-pointer rounded-xl hover:bg-white/50 dark:hover:bg-gray-800/50 transition-all duration-300"
-        >
+          className="cursor-pointer rounded-xl hover:bg-white/50 dark:hover:bg-gray-800/50 transition-all duration-300">
           <Laptop className="mr-3 h-4 w-4" />
           <span>System</span>
           {theme === "system" && (

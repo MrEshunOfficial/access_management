@@ -20,8 +20,8 @@ export default function AdminDashboard() {
     // Check if user has admin privileges
     if (!["admin", "super_admin"].includes(session.user.role)) {
       // Redirect non-admin users to their profile
-      const profileUrl = process.env.NEXT_PUBLIC_USER_SERVICE_URL
-        ? `${process.env.NEXT_PUBLIC_USER_SERVICE_URL}/profile`
+      const profileUrl = process.env.USER_SERVICE_URL
+        ? `${process.env.USER_SERVICE_URL}/profile`
         : "/admin";
       window.location.href = profileUrl;
       return;
@@ -31,8 +31,8 @@ export default function AdminDashboard() {
   }, [session, status, router]);
 
   const handleNavigateToProfile = () => {
-    const profileUrl = process.env.NEXT_PUBLIC_USER_SERVICE_URL
-      ? `${process.env.NEXT_PUBLIC_USER_SERVICE_URL}/profile`
+    const profileUrl = process.env.USER_SERVICE_URL
+      ? `${process.env.USER_SERVICE_URL}/profile`
       : "/profile";
     window.location.href = profileUrl;
   };
@@ -73,8 +73,7 @@ export default function AdminDashboard() {
                   className="w-6 h-6 text-white"
                   fill="none"
                   stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                  viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -110,8 +109,7 @@ export default function AdminDashboard() {
               className="w-10 h-10 text-white"
               fill="none"
               stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+              viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -143,16 +141,14 @@ export default function AdminDashboard() {
             <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
             <button
               onClick={handleNavigateToProfile}
-              className="relative w-full bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 transition-all duration-300 group-hover:border-transparent group-hover:shadow-2xl group-hover:scale-105"
-            >
+              className="relative w-full bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 transition-all duration-300 group-hover:border-transparent group-hover:shadow-2xl group-hover:scale-105">
               <div className="flex flex-col items-center text-center space-y-4">
                 <div className="w-16 h-16 bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 group-hover:from-white group-hover:to-white group-hover:text-blue-600 rounded-2xl flex items-center justify-center transition-all duration-300">
                   <svg
                     className="w-8 h-8 text-blue-600 dark:text-blue-400 group-hover:text-blue-600"
                     fill="none"
                     stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                    viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -176,8 +172,7 @@ export default function AdminDashboard() {
                     className="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform"
                     fill="none"
                     stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                    viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -195,16 +190,14 @@ export default function AdminDashboard() {
             <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
             <button
               onClick={handleNavigateToAdmin}
-              className="relative w-full bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 transition-all duration-300 group-hover:border-transparent group-hover:shadow-2xl group-hover:scale-105"
-            >
+              className="relative w-full bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 transition-all duration-300 group-hover:border-transparent group-hover:shadow-2xl group-hover:scale-105">
               <div className="flex flex-col items-center text-center space-y-4">
                 <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 group-hover:from-white group-hover:to-white group-hover:text-purple-600 rounded-2xl flex items-center justify-center transition-all duration-300">
                   <svg
                     className="w-8 h-8 text-purple-600 dark:text-purple-400 group-hover:text-purple-600"
                     fill="none"
                     stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                    viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -233,8 +226,7 @@ export default function AdminDashboard() {
                     className="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform"
                     fill="none"
                     stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                    viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -257,8 +249,7 @@ export default function AdminDashboard() {
                   className="w-6 h-6 text-slate-600 dark:text-slate-300"
                   fill="none"
                   stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                  viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
