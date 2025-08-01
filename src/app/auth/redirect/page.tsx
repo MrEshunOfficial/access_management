@@ -34,8 +34,8 @@ function getRoleBasedRedirectUrl(
     case "super_admin":
       return `${baseUrl}/admin-console`;
     case "user":
-      return process.env.NEXT_PUBLIC_USER_SERVICE_URL
-        ? `${process.env.NEXT_PUBLIC_USER_SERVICE_URL}/profile`
+      return process.env.NEXT_PUBLIC_AUTH_ACCESS_URL
+        ? `${process.env.NEXT_PUBLIC_AUTH_ACCESS_URL}/profile`
         : `${baseUrl}/profile`;
     default:
       return `${baseUrl}/user/login`;

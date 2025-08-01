@@ -20,8 +20,8 @@ export default function AdminDashboard() {
     // Check if user has admin privileges
     if (!["admin", "super_admin"].includes(session.user.role)) {
       // Redirect non-admin users to their profile
-      const profileUrl = process.env.NEXT_PUBLIC_USER_SERVICE_URL
-        ? `${process.env.NEXT_PUBLIC_USER_SERVICE_URL}/profile`
+      const profileUrl = process.env.NEXT_PUBLIC_AUTH_ACCESS_URL
+        ? `${process.env.NEXT_PUBLIC_AUTH_ACCESS_URL}/profile`
         : "/admin";
       window.location.href = profileUrl;
       return;
@@ -31,8 +31,8 @@ export default function AdminDashboard() {
   }, [session, status, router]);
 
   const handleNavigateToProfile = () => {
-    const profileUrl = process.env.NEXT_PUBLIC_USER_SERVICE_URL
-      ? `${process.env.NEXT_PUBLIC_USER_SERVICE_URL}/profile`
+    const profileUrl = process.env.NEXT_PUBLIC_AUTH_ACCESS_URL
+      ? `${process.env.NEXT_PUBLIC_AUTH_ACCESS_URL}/profile`
       : "/profile";
     window.location.href = profileUrl;
   };
