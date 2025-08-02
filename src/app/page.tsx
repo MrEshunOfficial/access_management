@@ -452,7 +452,7 @@ function UserMenu({ userPermissions }: UserMenuProps) {
         <DropdownMenuGroup>
           <DropdownMenuItem className="rounded-xl hover:bg-white/50 dark:hover:bg-gray-800/50 transition-all duration-300 cursor-pointer">
             <Link
-              href={`/${process.env.NEXT_PUBLIC_USER_SERVICE_URL}/profile`}
+              href={`${process.env.NEXT_PUBLIC_USER_SERVICE_URL}/profile`}
               className="flex w-full items-center gap-3 p-2"
             >
               <User className="h-4 w-4 text-gray-600 dark:text-gray-400" />
