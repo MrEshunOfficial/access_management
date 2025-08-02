@@ -407,52 +407,64 @@ export const authOptions: NextAuthConfig = {
       }
     },
 
-    async redirect({ url, baseUrl }) {
-      if (url.includes("signOut") || url.includes("logout")) {
-        return `${baseUrl}/auth/users/login`;
+   async redirect({ url, baseUrl }) {
+  if (url.includes("signOut") || url.includes("logout")) {
+    return `${baseUrl}/auth/users/login`;
+  }
+  
+  // For OAuth callbacks, redirect to user service callback instead of local handler
+  if (url.startsWith("/api/auth/callback/google") || url.startsWith("/api/auth/callback")) {
+    const userServiceUrl = process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'https://errandmate.vercel.app';
+    return `${userServiceUrl}/auth/callback`;
+  }
+  
+  try {
+    let callbackUrl: string | null = null;
+    
+    if (url.includes('://') || url.startsWith('http')) {
+      const parsedUrl = new URL(url);
+      callbackUrl = parsedUrl.searchParams.get("callbackUrl");
+    } else if (url.includes('callbackUrl=')) {
+      const urlParams = new URLSearchParams(url.split('?')[1]);
+      callbackUrl = urlParams.get("callbackUrl");
+    }
+
+    if (callbackUrl) {
+      // If callback URL is for user service, redirect there
+      const userServiceUrl = process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'https://errandmate.vercel.app';
+      if (callbackUrl.startsWith(userServiceUrl)) {
+        return callbackUrl;
       }
       
-      // For OAuth callbacks, redirect to a custom handler that can access the session
-      if (url.startsWith("/api/auth/callback/google") || url.startsWith("/api/auth/callback")) {
-        return `${baseUrl}/auth/redirect`;
-      }
-      
-      try {
-        let callbackUrl: string | null = null;
-        
-        if (url.includes('://') || url.startsWith('http')) {
-          const parsedUrl = new URL(url);
-          callbackUrl = parsedUrl.searchParams.get("callbackUrl");
-        } else if (url.includes('callbackUrl=')) {
-          const urlParams = new URLSearchParams(url.split('?')[1]);
-          callbackUrl = urlParams.get("callbackUrl");
+      if (callbackUrl.startsWith("/")) {
+        // Check if this should go to user service
+        if (callbackUrl.startsWith("/profile") || callbackUrl.startsWith("/dashboard")) {
+          return `${userServiceUrl}${callbackUrl}`;
         }
-
-        if (callbackUrl) {
-          if (callbackUrl.startsWith("/")) {
-            return `${baseUrl}${callbackUrl}`;
-          } else if (callbackUrl.startsWith(baseUrl)) {
-            return callbackUrl;
-          }
-        }
-      } catch (error) {
-        console.error("Error parsing URL:", error);
+        return `${baseUrl}${callbackUrl}`;
+      } else if (callbackUrl.startsWith(baseUrl)) {
+        return callbackUrl;
       }
-      
-      if (url.startsWith("/")) {
-        if (url === "/") {
-          return `${baseUrl}/auth/redirect`;
-        }
-        return `${baseUrl}${url}`;
-      }
-
-      if (url.startsWith(baseUrl)) {
-        return url;
-      }
-
-      // For all other cases, redirect to the role-based redirect handler
+    }
+  } catch (error) {
+    console.error("Error parsing URL:", error);
+  }
+  
+  if (url.startsWith("/")) {
+    if (url === "/") {
       return `${baseUrl}/auth/redirect`;
-    },
+    }
+    return `${baseUrl}${url}`;
+  }
+
+  if (url.startsWith(baseUrl)) {
+    return url;
+  }
+
+  // For successful login without specific callback, redirect to user service
+  const userServiceUrl = process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'https://errandmate.vercel.app';
+  return `${userServiceUrl}/auth/callback`;
+},
   },
 };
 

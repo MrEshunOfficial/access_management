@@ -13,7 +13,6 @@ interface UserPayload {
   provider?: string;
   providerId?: string;
 }
-
 interface JWTPayload extends UserPayload {
   sessionId: string;
   iat: number;
