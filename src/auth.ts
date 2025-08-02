@@ -7,13 +7,10 @@ import { connect } from "./lib/dbconfigue/dbConfigue";
 import { User } from "./app/models/auth/authModel";
 import { privatePaths, publicPaths } from "./auth.config";
 import crypto from "crypto";
-import { Types } from "mongoose";
+import { Types } from 'mongoose';
 import { checkAndGetUserRole } from "./lib/admin/adminService";
 
-const activeSessions = new Map<
-  string,
-  { userId: string; createdAt: Date; lastAccessed: Date }
->();
+const activeSessions = new Map<string, { userId: string; createdAt: Date; lastAccessed: Date }>();
 
 interface LeanUser {
   _id: Types.ObjectId;
@@ -60,35 +57,26 @@ interface CustomToken extends JWT {
   sessionId?: string;
 }
 
-function getRoleBasedRedirectUrl(
-  role: string,
-  baseUrl: string,
-  callbackUrl?: string
-): string {
-  if (
-    callbackUrl &&
-    !callbackUrl.includes("/auth/users/login") &&
-    !callbackUrl.includes("/auth/users/register") &&
-    callbackUrl !== "/"
-  ) {
-    if (role === "admin" || role === "super_admin") {
-      if (callbackUrl.startsWith("/admin/")) {
-        return callbackUrl.startsWith("/")
-          ? `${baseUrl}${callbackUrl}`
-          : callbackUrl;
+function getRoleBasedRedirectUrl(role: string, baseUrl: string, callbackUrl?: string): string {
+  if (callbackUrl && 
+      !callbackUrl.includes('/auth/users/login') && 
+      !callbackUrl.includes('/auth/users/register') &&
+      callbackUrl !== '/') {
+    
+    if ((role === 'admin' || role === 'super_admin')) {
+      if (callbackUrl.startsWith('/admin/')) {
+        return callbackUrl.startsWith('/') ? `${baseUrl}${callbackUrl}` : callbackUrl;
       }
     } else {
-      return callbackUrl.startsWith("/")
-        ? `${baseUrl}${callbackUrl}`
-        : callbackUrl;
+      return callbackUrl.startsWith('/') ? `${baseUrl}${callbackUrl}` : callbackUrl;
     }
   }
 
   switch (role) {
-    case "admin":
-    case "super_admin":
+    case 'admin':
+    case 'super_admin':
       return `${baseUrl}/admin-console`;
-    case "user":
+    case 'user':
       return process.env.NEXT_PUBLIC_USER_SERVICE_URL
         ? `${process.env.NEXT_PUBLIC_USER_SERVICE_URL}/profile`
         : `${baseUrl}/profile`;
@@ -100,9 +88,7 @@ function getRoleBasedRedirectUrl(
 async function generateSessionId(): Promise<string> {
   const array = new Uint8Array(32);
   crypto.getRandomValues(array);
-  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join(
-    ""
-  );
+  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 export async function invalidateUserSessions(userId: string) {
@@ -127,11 +113,55 @@ function cleanupExpiredSessions() {
   for (const [sessionId, session] of activeSessions.entries()) {
     const sessionAge = now.getTime() - session.createdAt.getTime();
     const inactivityTime = now.getTime() - session.lastAccessed.getTime();
-
+    
     if (sessionAge > maxAge || inactivityTime > inactivityTimeout) {
       activeSessions.delete(sessionId);
     }
   }
+}
+
+// Helper function to get cookie configuration based on environment
+function getCookieConfig() {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const enableCrossDomain = process.env.ENABLE_CROSS_DOMAIN_COOKIES === 'true';
+  
+  return {
+    sessionToken: {
+      name: 'next-auth.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: (isProduction && enableCrossDomain) ? 'none' : 'lax',
+        secure: isProduction,
+        path: '/',
+        // Only add domain in production when cross-domain is explicitly enabled
+        ...(isProduction && enableCrossDomain && {
+          domain: '.vercel.app'
+        })
+      }
+    },
+    callbackUrl: {
+      name: 'next-auth.callback-url',
+      options: {
+        sameSite: (isProduction && enableCrossDomain) ? 'none' : 'lax',
+        secure: isProduction,
+        path: '/',
+        ...(isProduction && enableCrossDomain && {
+          domain: '.vercel.app'
+        })
+      }
+    },
+    csrfToken: {
+      name: 'next-auth.csrf-token',
+      options: {
+        sameSite: (isProduction && enableCrossDomain) ? 'none' : 'lax',
+        secure: isProduction,
+        path: '/',
+        ...(isProduction && enableCrossDomain && {
+          domain: '.vercel.app'
+        })
+      }
+    }
+  } as const;
 }
 
 export const authOptions: NextAuthConfig = {
@@ -142,37 +172,9 @@ export const authOptions: NextAuthConfig = {
     updateAge: 60 * 60,
   },
   
-  // ADD THIS COOKIES CONFIGURATION
-  cookies: {
-    sessionToken: {
-      name: 'next-auth.session-token',
-      options: {
-        httpOnly: true,
-        sameSite: 'none', // Allow cross-origin requests
-        secure: true,     // Required for sameSite: 'none' in production
-        path: '/',
-        domain: '.vercel.app' // Share across vercel.app subdomains
-      }
-    },
-    callbackUrl: {
-      name: 'next-auth.callback-url',
-      options: {
-        sameSite: 'none',
-        secure: true,
-        path: '/',
-        domain: '.vercel.app'
-      }
-    },
-    csrfToken: {
-      name: 'next-auth.csrf-token',
-      options: {
-        sameSite: 'none',
-        secure: true,
-        path: '/',
-        domain: '.vercel.app'
-      }
-    }
-  },
+  // Smart cookie configuration that adapts to environment
+  cookies: getCookieConfig(),
+  
   pages: {
     signIn: "/auth/users/login",
     signOut: "/auth/users/login",
@@ -204,27 +206,19 @@ export const authOptions: NextAuthConfig = {
 
           await connect();
 
-          const user = await User.findOne({ email: credentials.email }).select(
-            "+password"
-          );
+          const user = await User.findOne({ email: credentials.email }).select("+password");
 
           if (!user) {
             throw new Error("User not found");
           }
 
-          if (
-            user.provider &&
-            user.providerId &&
-            user.provider !== "credentials"
-          ) {
+          if (user.provider && user.providerId && user.provider !== "credentials") {
             throw new Error(
               `This account uses ${user.provider} authentication. Please sign in with ${user.provider}.`
             );
           }
 
-          const isPasswordValid = await user.comparePassword(
-            credentials.password
-          );
+          const isPasswordValid = await user.comparePassword(credentials.password);
 
           if (!isPasswordValid) {
             throw new Error("Invalid password");
@@ -282,7 +276,7 @@ export const authOptions: NextAuthConfig = {
     async authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const path = nextUrl.pathname;
-
+      
       if (isLoggedIn && auth.sessionId) {
         const session = activeSessions.get(auth.sessionId);
         if (session) {
@@ -292,41 +286,29 @@ export const authOptions: NextAuthConfig = {
       }
 
       if (publicPaths.some((p) => path.startsWith(p))) {
-        if (
-          isLoggedIn &&
-          (path.startsWith("/auth/users/login") ||
-            path.startsWith("/auth/users/register"))
-        ) {
-          const redirectUrl = getRoleBasedRedirectUrl(
-            auth.user.role,
-            nextUrl.origin
-          );
+        if (isLoggedIn && (path.startsWith("/auth/users/login") || path.startsWith("/auth/users/register"))) {
+          const redirectUrl = getRoleBasedRedirectUrl(auth.user.role, nextUrl.origin);
           return Response.redirect(new URL(redirectUrl));
         }
         return true;
       }
-
+      
       if (privatePaths.some((p) => path.startsWith(p))) {
         if (!isLoggedIn) {
           const callbackUrl = encodeURIComponent(path);
-          return Response.redirect(
-            new URL(`/auth/users/login?callbackUrl=${callbackUrl}`, nextUrl)
-          );
+          return Response.redirect(new URL(`/auth/users/login?callbackUrl=${callbackUrl}`, nextUrl));
         }
         return isLoggedIn;
       }
-
+      
       if (path === "/") {
         if (!isLoggedIn) {
           return Response.redirect(new URL("/auth/users/login", nextUrl));
         }
-        const redirectUrl = getRoleBasedRedirectUrl(
-          auth.user.role,
-          nextUrl.origin
-        );
+        const redirectUrl = getRoleBasedRedirectUrl(auth.user.role, nextUrl.origin);
         return Response.redirect(new URL(redirectUrl));
       }
-
+      
       return true;
     },
 
@@ -335,14 +317,14 @@ export const authOptions: NextAuthConfig = {
 
       try {
         await connect();
-
+        
         let dbUser = await User.findOne({ email: user.email });
 
         if (!dbUser) {
           if (account) {
-            const userName = user.name || user.email?.split("@")[0] || "User";
+            const userName = user.name || user.email?.split('@')[0] || 'User';
             const userRole = await checkAndGetUserRole(user.email);
-
+            
             dbUser = await User.create({
               email: user.email,
               name: userName,
@@ -355,16 +337,12 @@ export const authOptions: NextAuthConfig = {
           }
         } else {
           if (account) {
-            if (
-              dbUser.provider &&
-              dbUser.provider !== account.provider &&
-              dbUser.provider !== "credentials"
-            ) {
+            if (dbUser.provider && dbUser.provider !== account.provider && dbUser.provider !== "credentials") {
               throw new Error(
                 `This email is already registered with ${dbUser.provider}. Please sign in with ${dbUser.provider}.`
               );
             }
-
+            
             if (!dbUser.provider || !dbUser.providerId) {
               dbUser.providerId = account.providerAccountId;
               dbUser.provider = account.provider;
@@ -378,7 +356,7 @@ export const authOptions: NextAuthConfig = {
         user.provider = dbUser.provider;
         user.providerId = dbUser.providerId;
         user.name = dbUser.name;
-
+        
         return true;
       } catch (error) {
         console.error("SignIn error:", error);
@@ -386,24 +364,16 @@ export const authOptions: NextAuthConfig = {
       }
     },
 
-    async session({
-      session,
-      token,
-    }: {
-      session: Session;
-      token: CustomToken;
-    }): Promise<Session> {
+    async session({ session, token }: { session: Session; token: CustomToken }): Promise<Session> {
       if (!token || !session.user) {
         return session;
       }
 
       try {
         await connect();
-
+        
         if (token.id) {
-          const user = (await User.findById(
-            token.id
-          ).lean()) as LeanUser | null;
+          const user = await User.findById(token.id).lean() as LeanUser | null;
           if (user) {
             session.user.id = user._id.toString();
             session.user.role = user.role;
@@ -415,23 +385,24 @@ export const authOptions: NextAuthConfig = {
             return session;
           }
         }
-
+        
         session.user.id = token.id as string;
-        session.user.role = (token.role as string) || "user";
+        session.user.role = token.role as string || 'user';
         session.user.email = token.email as string;
         session.user.name = token.name as string;
         session.user.provider = token.provider as string;
         session.sessionId = token.sessionId;
 
         return session;
+
       } catch {
         session.user.id = token.id as string;
-        session.user.role = (token.role as string) || "user";
+        session.user.role = token.role as string || 'user';
         session.user.email = token.email as string;
         session.user.name = token.name as string;
         session.user.provider = token.provider as string;
         session.sessionId = token.sessionId;
-
+        
         return session;
       }
     },
@@ -440,23 +411,20 @@ export const authOptions: NextAuthConfig = {
       if (url.includes("signOut") || url.includes("logout")) {
         return `${baseUrl}/auth/users/login`;
       }
-
+      
       // For OAuth callbacks, redirect to a custom handler that can access the session
-      if (
-        url.startsWith("/api/auth/callback/google") ||
-        url.startsWith("/api/auth/callback")
-      ) {
+      if (url.startsWith("/api/auth/callback/google") || url.startsWith("/api/auth/callback")) {
         return `${baseUrl}/auth/redirect`;
       }
-
+      
       try {
         let callbackUrl: string | null = null;
-
-        if (url.includes("://") || url.startsWith("http")) {
+        
+        if (url.includes('://') || url.startsWith('http')) {
           const parsedUrl = new URL(url);
           callbackUrl = parsedUrl.searchParams.get("callbackUrl");
-        } else if (url.includes("callbackUrl=")) {
-          const urlParams = new URLSearchParams(url.split("?")[1]);
+        } else if (url.includes('callbackUrl=')) {
+          const urlParams = new URLSearchParams(url.split('?')[1]);
           callbackUrl = urlParams.get("callbackUrl");
         }
 
@@ -470,7 +438,7 @@ export const authOptions: NextAuthConfig = {
       } catch (error) {
         console.error("Error parsing URL:", error);
       }
-
+      
       if (url.startsWith("/")) {
         if (url === "/") {
           return `${baseUrl}/auth/redirect`;
