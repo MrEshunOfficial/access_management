@@ -128,6 +128,38 @@ export const authOptions: NextAuthConfig = {
     updateAge: 60 * 60,
   },
   
+  // ADD THIS COOKIES CONFIGURATION
+  cookies: {
+    sessionToken: {
+      name: 'next-auth.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'none', // Allow cross-origin requests
+        secure: true,     // Required for sameSite: 'none' in production
+        path: '/',
+        domain: '.vercel.app' // Share across vercel.app subdomains
+      }
+    },
+    callbackUrl: {
+      name: 'next-auth.callback-url',
+      options: {
+        sameSite: 'none',
+        secure: true,
+        path: '/',
+        domain: '.vercel.app'
+      }
+    },
+    csrfToken: {
+      name: 'next-auth.csrf-token',
+      options: {
+        sameSite: 'none',
+        secure: true,
+        path: '/',
+        domain: '.vercel.app'
+      }
+    }
+  },
+  
   pages: {
     signIn: "/auth/users/login",
     signOut: "/auth/users/login",
