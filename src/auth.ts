@@ -6,8 +6,14 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { connect } from "./lib/dbconfigue/dbConfigue";
 import { User } from "./app/models/auth/authModel";
 import { privatePaths, publicPaths } from "./auth.config";
+import crypto from "crypto";
 import { Types } from "mongoose";
 import { checkAndGetUserRole } from "./lib/admin/adminService";
+
+const activeSessions = new Map<
+  string,
+  { userId: string; createdAt: Date; lastAccessed: Date }
+>();
 
 interface LeanUser {
   _id: Types.ObjectId;
@@ -34,6 +40,7 @@ declare module "next-auth" {
       provider?: string | null;
       providerId?: string | null;
     } & DefaultSession["user"];
+    sessionId?: string;
   }
 
   interface User {
@@ -50,6 +57,7 @@ interface CustomToken extends JWT {
   id?: string;
   role?: string;
   provider?: string;
+  sessionId?: string;
 }
 
 function getRoleBasedRedirectUrl(
@@ -89,12 +97,49 @@ function getRoleBasedRedirectUrl(
   }
 }
 
+async function generateSessionId(): Promise<string> {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join(
+    ""
+  );
+}
+
+export async function invalidateUserSessions(userId: string) {
+  const sessionsToRemove: string[] = [];
+
+  for (const [sessionId, session] of activeSessions.entries()) {
+    if (session.userId === userId) {
+      sessionsToRemove.push(sessionId);
+    }
+  }
+
+  sessionsToRemove.forEach((sessionId) => {
+    activeSessions.delete(sessionId);
+  });
+}
+
+function cleanupExpiredSessions() {
+  const now = new Date();
+  const maxAge = 24 * 60 * 60 * 1000;
+  const inactivityTimeout = 4 * 60 * 60 * 1000;
+
+  for (const [sessionId, session] of activeSessions.entries()) {
+    const sessionAge = now.getTime() - session.createdAt.getTime();
+    const inactivityTime = now.getTime() - session.lastAccessed.getTime();
+
+    if (sessionAge > maxAge || inactivityTime > inactivityTimeout) {
+      activeSessions.delete(sessionId);
+    }
+  }
+}
+
 export const authOptions: NextAuthConfig = {
   secret: process.env.AUTH_SECRET,
   session: {
     strategy: "jwt",
-    maxAge: 24 * 60 * 60, // 24 hours
-    updateAge: 60 * 60, // 1 hour
+    maxAge: 24 * 60 * 60,
+    updateAge: 60 * 60,
   },
 
   pages: {
@@ -173,17 +218,47 @@ export const authOptions: NextAuthConfig = {
   ],
   callbacks: {
     async jwt({ token, user, account }) {
+      if (Math.random() < 0.01) {
+        cleanupExpiredSessions();
+      }
+
       if (user) {
         token.id = user.id;
         token.role = user.role;
         token.provider = account?.provider;
+
+        const sessionId = await generateSessionId();
+        token.sessionId = sessionId;
+
+        activeSessions.set(sessionId, {
+          userId: user.id as string,
+          createdAt: new Date(),
+          lastAccessed: new Date(),
+        });
       }
+
+      if (token.sessionId && activeSessions.has(token.sessionId as string)) {
+        const session = activeSessions.get(token.sessionId as string);
+        if (session) {
+          session.lastAccessed = new Date();
+          activeSessions.set(token.sessionId as string, session);
+        }
+      }
+
       return token;
     },
 
     async authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const path = nextUrl.pathname;
+
+      if (isLoggedIn && auth.sessionId) {
+        const session = activeSessions.get(auth.sessionId);
+        if (session) {
+          session.lastAccessed = new Date();
+          activeSessions.set(auth.sessionId, session);
+        }
+      }
 
       if (publicPaths.some((p) => path.startsWith(p))) {
         if (
@@ -305,6 +380,7 @@ export const authOptions: NextAuthConfig = {
             session.user.name = user.name;
             session.user.provider = user.provider;
             session.user.providerId = user.providerId;
+            session.sessionId = token.sessionId;
             return session;
           }
         }
@@ -314,15 +390,16 @@ export const authOptions: NextAuthConfig = {
         session.user.email = token.email as string;
         session.user.name = token.name as string;
         session.user.provider = token.provider as string;
+        session.sessionId = token.sessionId;
 
         return session;
-      } catch (error) {
-        console.error("Session callback error:", error);
+      } catch {
         session.user.id = token.id as string;
         session.user.role = (token.role as string) || "user";
         session.user.email = token.email as string;
         session.user.name = token.name as string;
         session.user.provider = token.provider as string;
+        session.sessionId = token.sessionId;
 
         return session;
       }
