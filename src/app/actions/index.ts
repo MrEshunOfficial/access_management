@@ -6,8 +6,8 @@ import { invalidateUserSessions } from "@/auth"
 import { auth } from "@/auth"
 import { connect } from "@/lib/dbconfigue/dbConfigue"
 import { revalidatePath } from "next/cache"
-import { User } from "../models/auth/authModel"
 import { AuthError } from "next-auth"
+import { User } from "@/lib/models/auth/authModel"
 
 export async function doSocialLogin(formData: FormData) {
   const action = formData.get("action") as string

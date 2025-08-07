@@ -4,11 +4,11 @@ import type { JWT } from "next-auth/jwt";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { connect } from "./lib/dbconfigue/dbConfigue";
-import { User } from "./app/models/auth/authModel";
 import { privatePaths, publicPaths } from "./auth.config";
 import crypto from "crypto";
 import { Types } from 'mongoose';
 import { checkAndGetUserRole } from "./lib/admin/adminService";
+import { User } from "./lib/models/auth/authModel";
 
 const activeSessions = new Map<string, { userId: string; createdAt: Date; lastAccessed: Date }>();
 
@@ -77,8 +77,8 @@ function getRoleBasedRedirectUrl(role: string, baseUrl: string, callbackUrl?: st
     case 'super_admin':
       return `${baseUrl}/admin-console`;
     case 'user':
-      return process.env.NEXT_PUBLIC_USER_SERVICE_URL
-        ? `${process.env.NEXT_PUBLIC_USER_SERVICE_URL}/profile`
+      return process.env.USER_SERVICE_URL
+        ? `${process.env.USER_SERVICE_URL}/profile`
         : `${baseUrl}/profile`;
     default:
       return `${baseUrl}/auth/users/login`;
@@ -120,50 +120,6 @@ function cleanupExpiredSessions() {
   }
 }
 
-// Helper function to get cookie configuration based on environment
-function getCookieConfig() {
-  const isProduction = process.env.NODE_ENV === 'production';
-  const enableCrossDomain = process.env.ENABLE_CROSS_DOMAIN_COOKIES === 'true';
-  
-  return {
-    sessionToken: {
-      name: 'next-auth.session-token',
-      options: {
-        httpOnly: true,
-        sameSite: (isProduction && enableCrossDomain) ? 'none' : 'lax',
-        secure: isProduction,
-        path: '/',
-        // Only add domain in production when cross-domain is explicitly enabled
-        ...(isProduction && enableCrossDomain && {
-          domain: '.vercel.app'
-        })
-      }
-    },
-    callbackUrl: {
-      name: 'next-auth.callback-url',
-      options: {
-        sameSite: (isProduction && enableCrossDomain) ? 'none' : 'lax',
-        secure: isProduction,
-        path: '/',
-        ...(isProduction && enableCrossDomain && {
-          domain: '.vercel.app'
-        })
-      }
-    },
-    csrfToken: {
-      name: 'next-auth.csrf-token',
-      options: {
-        sameSite: (isProduction && enableCrossDomain) ? 'none' : 'lax',
-        secure: isProduction,
-        path: '/',
-        ...(isProduction && enableCrossDomain && {
-          domain: '.vercel.app'
-        })
-      }
-    }
-  } as const;
-}
-
 export const authOptions: NextAuthConfig = {
   secret: process.env.AUTH_SECRET,
   session: {
@@ -171,9 +127,6 @@ export const authOptions: NextAuthConfig = {
     maxAge: 24 * 60 * 60,
     updateAge: 60 * 60,
   },
-  
-  // Smart cookie configuration that adapts to environment
-  cookies: getCookieConfig(),
   
   pages: {
     signIn: "/auth/users/login",
@@ -407,64 +360,52 @@ export const authOptions: NextAuthConfig = {
       }
     },
 
-   async redirect({ url, baseUrl }) {
-  if (url.includes("signOut") || url.includes("logout")) {
-    return `${baseUrl}/auth/users/login`;
-  }
-  
-  // For OAuth callbacks, redirect to user service callback instead of local handler
-  if (url.startsWith("/api/auth/callback/google") || url.startsWith("/api/auth/callback")) {
-    const userServiceUrl = process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'https://errandmate.vercel.app';
-    return `${userServiceUrl}/auth/callback`;
-  }
-  
-  try {
-    let callbackUrl: string | null = null;
-    
-    if (url.includes('://') || url.startsWith('http')) {
-      const parsedUrl = new URL(url);
-      callbackUrl = parsedUrl.searchParams.get("callbackUrl");
-    } else if (url.includes('callbackUrl=')) {
-      const urlParams = new URLSearchParams(url.split('?')[1]);
-      callbackUrl = urlParams.get("callbackUrl");
-    }
-
-    if (callbackUrl) {
-      // If callback URL is for user service, redirect there
-      const userServiceUrl = process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'https://errandmate.vercel.app';
-      if (callbackUrl.startsWith(userServiceUrl)) {
-        return callbackUrl;
+    async redirect({ url, baseUrl }) {
+      if (url.includes("signOut") || url.includes("logout")) {
+        return `${baseUrl}/auth/users/login`;
       }
       
-      if (callbackUrl.startsWith("/")) {
-        // Check if this should go to user service
-        if (callbackUrl.startsWith("/profile") || callbackUrl.startsWith("/dashboard")) {
-          return `${userServiceUrl}${callbackUrl}`;
-        }
-        return `${baseUrl}${callbackUrl}`;
-      } else if (callbackUrl.startsWith(baseUrl)) {
-        return callbackUrl;
+      // For OAuth callbacks, redirect to a custom handler that can access the session
+      if (url.startsWith("/api/auth/callback/google") || url.startsWith("/api/auth/callback")) {
+        return `${baseUrl}/auth/redirect`;
       }
-    }
-  } catch (error) {
-    console.error("Error parsing URL:", error);
-  }
-  
-  if (url.startsWith("/")) {
-    if (url === "/") {
+      
+      try {
+        let callbackUrl: string | null = null;
+        
+        if (url.includes('://') || url.startsWith('http')) {
+          const parsedUrl = new URL(url);
+          callbackUrl = parsedUrl.searchParams.get("callbackUrl");
+        } else if (url.includes('callbackUrl=')) {
+          const urlParams = new URLSearchParams(url.split('?')[1]);
+          callbackUrl = urlParams.get("callbackUrl");
+        }
+
+        if (callbackUrl) {
+          if (callbackUrl.startsWith("/")) {
+            return `${baseUrl}${callbackUrl}`;
+          } else if (callbackUrl.startsWith(baseUrl)) {
+            return callbackUrl;
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing URL:", error);
+      }
+      
+      if (url.startsWith("/")) {
+        if (url === "/") {
+          return `${baseUrl}/auth/redirect`;
+        }
+        return `${baseUrl}${url}`;
+      }
+
+      if (url.startsWith(baseUrl)) {
+        return url;
+      }
+
+      // For all other cases, redirect to the role-based redirect handler
       return `${baseUrl}/auth/redirect`;
-    }
-    return `${baseUrl}${url}`;
-  }
-
-  if (url.startsWith(baseUrl)) {
-    return url;
-  }
-
-  // For successful login without specific callback, redirect to user service
-  const userServiceUrl = process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'https://errandmate.vercel.app';
-  return `${userServiceUrl}/auth/callback`;
-},
+    },
   },
 };
 

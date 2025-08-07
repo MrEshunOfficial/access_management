@@ -1,8 +1,8 @@
 // adminService.ts - Admin management functions
-import { AdminInvitation, AdminAuditLog } from "@/app/models/auth/adminModels";
 import crypto from "crypto";
 import { connect } from "../dbconfigue/dbConfigue";
-import { User } from "@/app/models/auth/authModel";
+import { AdminInvitation, AdminAuditLog } from "../models/auth/adminModels";
+import { User } from "../models/auth/authModel";
 
 /**
  * Creates an admin invitation for a user
