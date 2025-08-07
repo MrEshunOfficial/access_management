@@ -1,9 +1,9 @@
 // services/admin/userManagementService.ts
 
-import { AdminAuditLog } from "@/app/models/auth/adminModels";
-import { User } from "@/app/models/auth/authModel";
 import { invalidateUserSessions } from "@/auth";
 import { connect } from "@/lib/dbconfigue/dbConfigue";
+import { AdminAuditLog } from "@/lib/models/auth/adminModels";
+import { User } from "@/lib/models/auth/authModel";
 
 export interface UserSuspensionData {
   userId: string;

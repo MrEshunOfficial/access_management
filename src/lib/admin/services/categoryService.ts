@@ -1,7 +1,6 @@
 // src/services/category.service.ts
-
-import { CategoryModel, ICategoryLean } from "@/app/models/category-service-models/categoryModel";
-import { ServiceModel } from "@/app/models/category-service-models/serviceModel";
+import { CategoryModel, ICategoryLean } from "@/lib/models/category-service-models/categoryModel";
+import { ServiceModel } from "@/lib/models/category-service-models/serviceModel";
 import { Category, CreateCategoryInput, UpdateCategoryInput } from "@/store/types/dataTypes";
 import { Types } from "mongoose";
 import type { PipelineStage } from "mongoose";

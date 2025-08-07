@@ -1,6 +1,6 @@
 // src/services/service.service.ts
-import { CategoryModel } from "@/app/models/category-service-models/categoryModel";
-import { ServiceModel, IServiceDocument } from "@/app/models/category-service-models/serviceModel";
+import { CategoryModel } from "@/lib/models/category-service-models/categoryModel";
+import { ServiceModel, IServiceDocument } from "@/lib/models/category-service-models/serviceModel";
 import { CreateServiceInput, PaginatedResponse, Service, UpdateServiceInput, ServiceFilters } from "@/store/types/dataTypes";
 import { Types } from "mongoose";
 

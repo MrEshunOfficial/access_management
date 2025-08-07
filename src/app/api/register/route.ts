@@ -1,7 +1,7 @@
 // src/app/api/register/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { connect } from "@/lib/dbconfigue/dbConfigue";
-import { User } from "@/app/models/auth/authModel";
+import { User } from "@/lib/models/auth/authModel";
 
 interface MongoError extends Error {
   code?: number;

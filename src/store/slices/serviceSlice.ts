@@ -1,7 +1,7 @@
 // src/store/slices/serviceSlice.ts
-import { IServiceDocument } from '@/app/models/category-service-models/serviceModel';
 import { ServicesResponse, ServiceApi } from '@/lib/admin/client-api/serviceApi';
 import { ServiceStats } from '@/lib/admin/services/serviceServices';
+import { IServiceDocument } from '@/lib/models/category-service-models/serviceModel';
 import { createSlice, createAsyncThunk, PayloadAction, Draft } from '@reduxjs/toolkit';
 import { Types } from 'mongoose';
 

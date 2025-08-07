@@ -1,8 +1,8 @@
 // lib/admin/bootstrap.ts - Clean implementation for Option 1 only
 
 import { connect } from "../dbconfigue/dbConfigue";
-import { User } from "../../app/models/auth/authModel";
-import { AdminAuditLog } from "../../app/models/auth/adminModels";
+import { AdminAuditLog } from "../models/auth/adminModels";
+import { User } from "../models/auth/authModel";
 
 /**
  * Environment Variable Bootstrap

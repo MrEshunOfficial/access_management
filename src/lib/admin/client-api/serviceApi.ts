@@ -1,6 +1,7 @@
 // src/lib/api/serviceApi.ts
 
-import { IServiceDocument } from "@/app/models/category-service-models/serviceModel";
+import { IServiceDocument } from "@/lib/models/category-service-models/serviceModel";
+
 
 export interface CreateServiceInput {
   title: string;

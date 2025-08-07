@@ -1,9 +1,9 @@
 // lib/admin/management.ts - Admin panel backend functions
 
+import { User } from "@/lib/models/auth/authModel";
 import { connect } from "../../dbconfigue/dbConfigue";
-import { User } from "../../../app/models/auth/authModel";
-import { AdminInvitation, AdminAuditLog } from "../../../app/models/auth/adminModels";
 import { FilterQuery } from "mongoose";
+import { AdminInvitation, AdminAuditLog } from "@/lib/models/auth/adminModels";
 
 export interface UserWithAdminInfo {
   _id: string;

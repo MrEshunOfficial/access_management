@@ -1,5 +1,5 @@
 // src/hooks/useServices.ts
-import { IServiceDocument } from '@/app/models/category-service-models/serviceModel';
+import { IServiceDocument } from '@/lib/models/category-service-models/serviceModel';
 import { AppDispatch, RootState } from '@/store';
 import { clearError, resetState } from '@/store/slices/categorySlice';
 import { setFilters, clearFilters } from '@/store/slices/serviceSlice';
